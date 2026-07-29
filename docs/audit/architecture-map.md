@@ -1,0 +1,218 @@
+# Mapa de arquitectura observada
+
+Este documento describe el código actual, no la arquitectura pretendida en
+especificaciones externas.
+
+## Vista de procesos
+
+```text
+Electron main (main/index.ts)
+├── SQLite / better-sqlite3 (main/db.ts)
+├── Express principal 0.0.0.0:3001 (main/server.ts)
+│   ├── Next.js export estático
+│   ├── API /api/*
+│   └── WebSocket KDS /kds
+├── Express KDS 0.0.0.0:3002 (main/kds-server.ts)
+│   ├── KDS standalone estático
+│   ├── API KDS reducida
+│   └── WebSocket /kds
+├── Bonjour/mDNS (flo.local)
+├── Impresión ESC/POS
+├── Sincronización cloud opcional
+├── Telemetría
+├── Google Drive opcional
+├── WhatsApp opcional
+└── electron-updater en builds directos macOS/Windows
+
+Renderer Electron
+└── http://localhost:3001
+    └── Next.js 16 + React 19 + Zustand
+```
+
+Los dos servidores Express son independientes, pero comparten el mismo proceso
+Electron y la misma conexión SQLite. No hay un servidor de base de datos ni un
+servicio cloud obligatorio para cobrar o gestionar pedidos localmente.
+
+## Arranque real
+
+`npm run dev` ejecuta, en orden:
+
+1. Limpieza de los puertos 3001/3002.
+2. Build estático completo del frontend.
+3. Compilación de `main/` a `dist/`.
+4. Arranque de `electron .`.
+
+Electron inicializa la base y sus migraciones, arranca API principal,
+sincronización cloud, telemetría y scheduler de Google Drive, arranca KDS,
+inicializa WhatsApp, mDNS e impresión, registra IPC y crea la ventana.
+
+En desarrollo, la base está en la raíz del repositorio, no en el `userData`
+pasado a Electron. Esto se debe a que `getDbPath()` usa `../flo.db` cuando
+`app.isPackaged` es falso.
+
+## Puertos y superficies de red
+
+| Superficie | Bind/URL | Acceso y finalidad |
+| --- | --- | --- |
+| API + POS | `0.0.0.0:3001` por defecto | Estático, API REST y WS `/kds`; accesible desde la LAN. |
+| KDS standalone | `0.0.0.0:3002` por defecto | Página KDS, API reducida y WS `/kds`; accesible desde la LAN. |
+| mDNS | `flo.local` | Bonjour anuncia POS y puerto KDS; usa mDNS en la red local. |
+| Google OAuth | `127.0.0.1:<efímero>` | Listener temporal durante la autorización de Google Drive. |
+| Impresora de red | `<IP>:9100` por defecto | TCP raw ESC/POS saliente. |
+| Cloud | HTTPS/WSS saliente | `https://blue.flopos.com/` y su relay `/api/pos/relay`. |
+| Telemetría | HTTPS saliente | `https://telemetry.flopos.com/collect`. |
+| Actualización | HTTPS saliente | Releases de `FreeOpenSourcePOS/FloCafe`. |
+| Google Drive | HTTPS saliente | OAuth, Drive API y revocación de token. |
+| WhatsApp | Internet saliente | Baileys/WhatsApp Web si se activa. |
+
+Ambos servidores prueban hasta diez puertos consecutivos si el configurado está
+ocupado. El KDS expone su puerto activo mediante `getKdsPort()`. El servidor
+principal también mantiene `activePort`, pero la ventana, mDNS, menú y estado
+siguen usando el `PORT` original. Por ello, el fallback 3001→3002/3003 puede
+dejar la API escuchando en un puerto distinto del que abre/anuncia Electron.
+
+No hay TLS local. CORS permite solicitudes sin `Origin`, localhost, hostnames
+`.local` e IP privadas/Tailscale. El rate limit general excluye direcciones
+locales; el de autenticación sí se aplica. La API usa JWT y consulta el rol/estado
+actual del usuario en base de datos. La lista de tokens revocados es solo en
+memoria y se pierde al reiniciar.
+
+## API principal
+
+`main/server.ts` sirve el frontend exportado y monta 27 módulos de rutas:
+autenticación, categorías, productos, addons, pedidos e ítems, cocina, facturas,
+mesas, estaciones, clientes, personal, ajustes, informes, KDS, información de
+emparejado POS/KDS, impresoras, importación/exportación, herramientas de base,
+CSV de menú, fiscalidad, pedidos retenidos y WhatsApp.
+
+Son públicas la salud, las rutas de autenticación que implementan su propio
+control y algunas lecturas explícitas como imágenes de producto. El resto pasa
+por autenticación global y, en las operaciones sensibles, autorización por rol
+y/o Master PIN.
+
+El servidor aplica CSP. La ventana principal usa `contextIsolation: true` y
+`nodeIntegration: false`, pero `sandbox: false`. En Windows se añade
+`disable-gpu-sandbox` globalmente por compatibilidad.
+
+## KDS y dispositivos secundarios
+
+Existen dos formas de KDS:
+
+- KDS embebido en el servidor principal, con WebSocket `/kds`.
+- KDS standalone en el segundo servidor, también con REST y WebSocket propios.
+
+El KDS standalone permite login y restringe el acceso a `chef`, `manager` y
+`owner`. Revalida estado, rol y restricciones de estaciones/categorías contra
+SQLite. Las actualizaciones se difunden mediante el servicio compartido
+`main/services/kds.ts`.
+
+Los ajustes `kds_enabled` y `kot_printing_enabled` son independientes. El código
+rechaza endpoints/upgrade WS del KDS cuando está desactivado. Los dispositivos
+secundarios acceden por IP LAN o `flo.local`; las pantallas de información
+generan las URLs/QR correspondientes. No existe sincronización peer-to-peer:
+todos los terminales hablan con el Electron que posee SQLite.
+
+## Persistencia, logs y copias
+
+| Dato | Desarrollo | Aplicación empaquetada |
+| --- | --- | --- |
+| SQLite | `<repo>\flo.db` | `<userData>\flo.db` |
+| WAL/SHM | Junto a `flo.db` | Junto a `flo.db` |
+| Copias administradas | `<userData>\backups` | `<userData>\backups` |
+| Logs | Ruta de electron-log bajo `userData\logs` | Ruta de electron-log bajo `userData\logs` |
+| Master PIN | `<userData>\master-pin.enc` | Igual |
+| Google OAuth | `<userData>\google-drive-token.enc` | Igual |
+| WhatsApp | `<userData>\whatsapp-auth` | Igual |
+
+En Windows, el nombre real de datos de usuario deriva de `flo-desktop`, por lo
+que la ubicación esperada es `%APPDATA%\flo-desktop`. El changelog confirma
+esta diferencia respecto al nombre visible “Flo Cafe”. En macOS corresponde a
+`~/Library/Application Support/flo-desktop`; en Linux el código/documentación
+usa `~/.config/flo-desktop`.
+
+SQLite trabaja en WAL, `synchronous=NORMAL`, `busy_timeout=5000` y claves
+foráneas activadas después de migrar. Al arrancar ejecuta
+`integrity_check` y `foreign_key_check`; registra problemas, pero no siempre
+detiene el servicio.
+
+Las copias manuales usan la API de backup de SQLite, pasan a journal DELETE y
+añaden `_flo_meta` con versión de esquema, fecha y versión de aplicación. Puede
+elegirse una ruta externa; solo las copias del directorio administrado aparecen
+en el historial. No se observó una política automática de retención local. La
+integración Google Drive sí aplica una retención configurable, 10 por defecto.
+
+## Migraciones SQLite
+
+El esquema usa `PRAGMA user_version` y contiene 38 migraciones. Cada migración
+pendiente se ejecuta dentro de su propia transacción y actualiza `user_version`.
+Una base más nueva que el binario provoca un fallo explícito.
+
+Antes de un lote pendiente se hace checkpoint WAL y se intenta copiar la base.
+El fallo de esa copia se captura y solo se registra; el bucle de migración
+continúa. Aunque la norma actual exige migraciones aditivas, el historial
+contiene:
+
+- v10: `DROP TABLE IF EXISTS sequences` y recreación.
+- v14: borrado de settings y `DROP COLUMN customers.loyalty_points`.
+- v30: backfill condicionado y `DROP COLUMN order_items.addons`.
+
+No se han alterado estas migraciones durante la auditoría.
+
+## Impresión
+
+La impresión backend está en `main/printers/thermal.ts`, perfiles en
+`main/printers/profiles.ts`, API en `main/routes/printers.ts` y composición/audit
+de recibos en módulos separados. El frontend también contiene encoder ESC/POS,
+WebUSB y una ruta HTML/A4-A5.
+
+Perfiles incluidos:
+
+- Xprinter XP-V320M/XP-V330M.
+- Epson TM ESC/POS.
+- Genérico ESC/POS de 80 mm y 58 mm.
+
+Transportes:
+
+- TCP raw de red, puerto 9100 y timeout de 5 segundos.
+- macOS/Linux mediante `lp -o raw`.
+- Windows mediante `node-thermal-printer`, con fallback PowerShell `PrintTo`
+  sobre un `.bin` temporal.
+- WebUSB desde el navegador; el dispatcher Electron no lo procesa.
+
+Los KOT se agrupan por estación y categorías. Lo no asignado cae en la
+impresora predeterminada bajo “Kitchen”. El frontend intenta imprimir primero y
+registra después el recibo/reimpresión en `print_logs`, pero la API física
+`/api/printers/print-bill` y la API de auditoría `/api/bills/:id/print` son
+operaciones separadas: no constituyen una transacción única.
+
+## Telemetría, cloud y actualización
+
+La telemetría usa un UUID aleatorio persistente y envía versión, plataforma,
+tipo de evento y payload. Emite `app_launch`, un `daily_ping` como máximo cada
+24 horas y comprueba la periodicidad cada hora. La función de envío consulta
+`telemetry_enabled`.
+
+Hay una inconsistencia de primera instalación: `loadInstallDefaults()` crea
+`anonymous_data_consent=true` y `telemetry_enabled=true`, y el checkbox del
+wizard empieza marcado. Como `telemetry.start()` se ejecuta antes de que el
+usuario complete el wizard, una base nueva puede intentar enviar `app_launch`
+antes de una decisión informada. Las instalaciones migradas reciben defaults
+distintos (`false`) y el endpoint de setup sí respeta el booleano enviado.
+
+La sincronización cloud está desactivada por defecto y requiere registro/clave.
+Cuando se activa usa outbox local, HMAC, HTTPS/WSS, heartbeat y fallback de
+polling. Admite comandos de solo lectura: salud, pedidos vivos, pedido por ID e
+informe de ventas. La implementación carga flags separados para pedidos e
+informes, pero `runCommand()` y `recordOrderChanged()` no los consultan.
+
+La actualización automática:
+
+- Se omite en Linux y builds de Microsoft/Mac App Store.
+- En distribución directa macOS/Windows consulta GitHub cinco segundos después
+  del arranque.
+- No descarga automáticamente: pregunta, descarga si se acepta y puede instalar
+  al salir.
+- Está configurada contra `FreeOpenSourcePOS/FloCafe`, no contra el fork
+  `joputajones/tpv-abierto`.
+- El instalador Windows actual se publica sin firma; macOS directo se configura
+  para firma y notarización.
