@@ -1,5 +1,54 @@
 # Auditoría técnica inicial
 
+## Reconciliación M0
+
+La auditoría original se conserva a continuación como evidencia histórica. El
+2026-07-30 se fusionó de forma normal `origin/main` en
+`audit/m0-reconcile`, sin rebase ni descarte, y se contrastó el commit de
+auditoría `c9110f449b70fbb4ccd39018725eb2c4ad522de3` con la documentación
+canónica incorporada por el PR #13.
+
+| Campo | Valor |
+| --- | --- |
+| Fecha | 2026-07-30 |
+| Sistema | Windows 10 `10.0.19045`, PowerShell |
+| Node / npm | Node `v22.20.0`; npm `10.9.3` |
+| Commit analizado | `d366538fe1a5d798d5f6c6249b365e306e38efbc` |
+| Rama | `audit/m0-reconcile` |
+| Main integrado | `080e9c636663d8052567db3ab68d8d40ad483fff` |
+| Fuente oficial de seguimiento | `docs/project/` |
+
+No existe `specs/` en este checkout. Las referencias a especificaciones
+privadas siguen siendo externas y no se han conectado al repositorio, al build
+ni al runtime.
+
+### Revisión crítica de hallazgos
+
+| Hallazgo anterior | Clasificación | Evidencia actual | Limitación |
+| --- | --- | --- | --- |
+| La auditoría previa existía solo en una rama/commit local | Confirmado mediante prueba ejecutada | `git branch -vv`, `git log` y diff localizaron `audit/baseline` / `c9110f4`; no había PR remoto de auditoría | La publicación se realiza en este PR |
+| Electron real es 43.2.0 | Confirmado mediante prueba ejecutada | `package.json` declara `^43.2.0`, ambos lockfiles se parsean y `electron.exe --version` devuelve `v43.2.0` | No se construyó un instalador |
+| API y KDS escuchan en todas las interfaces en 3001/3002 | Confirmado mediante prueba ejecutada | `node dev-server.js`, listeners `0.0.0.0:3001` y `0.0.0.0:3002`, salud y HTML 200 | No se ensayó una LAN hostil ni TLS |
+| Flags cloud de pedidos/informes no protegen todos los caminos de datos | Confirmado mediante código | `recordOrderChanged()`, `runCommand()` y `decorateOrder()` no aplican ambos flags; la instantánea incluye cliente/factura/pago | No se registró una cuenta cloud ni tráfico real |
+| Una migración puede continuar si falla la copia previa | Confirmado mediante prueba ejecutada | La suite provoca `Auto-backup before migration failed` y continúa; v10/v14/v30 contienen operaciones destructivas históricas | La fixture feliz v0→v38 sí conserva los datos cubiertos |
+| La instalación raíz es reproducible en el Windows auditado | Contradicho por la evidencia | `npm.cmd ci` termina con código 1: toolset v142 presente, Windows SDK ausente | `npm.cmd ci --ignore-scripts` solo permite diagnóstico |
+| La suite se ejecuta con el comando literal documentado | Contradicho por la evidencia | `npm.cmd test` no encuentra `bash`; la cadena pasa al añadir Git Bash temporalmente a `PATH` | El workaround no resuelve una instalación limpia |
+| Builds y suite automatizada son funcionales en el árbol disponible | Confirmado mediante prueba ejecutada | TypeScript, export de 22 rutas, v0→v38 y la cadena completa pasan | No hay métrica de cobertura ni E2E Playwright ejecutado |
+| Un pedido persiste tras reiniciar el backend | Confirmado parcialmente | Pedido sintético creado por API, proceso detenido, servidor reiniciado, login y lectura del mismo pedido correctos | El cierre no dejó evidencia de apagado graceful; no se probó corte eléctrico |
+| Impresión está lista para hardware de restaurante | Bloqueado por hardware o información externa | Tests de bytes/perfiles/API simulada pasan | Sin impresora, spooler, cajón, papel, USB/TCP ni cola persistente |
+| Copia y restauración están listas para desastre real | Confirmado parcialmente | Tests desechables y copia premigración feliz pasan | Sin copia fuera del equipo, retención local automática ni simulacro en otra máquina |
+| Telemetría es siempre opt-in antes de arrancar | Contradicho por la evidencia | Defaults nuevos `true` y `telemetry.start()` anterior al wizard; migrados reciben defaults distintos | No se capturó una petición HTTPS real |
+| El fallback de puerto principal es coherente | Confirmado mediante código | El servidor mantiene puerto activo, pero ventana/mDNS/menú siguen usando `PORT`; KDS sí expone el activo | No se ocupó 3001 durante esta repetición |
+| El actualizador del fork usa releases del fork | Contradicho por la evidencia | Configuración de publicación/actualización apunta a `FreeOpenSourcePOS/FloCafe`; Windows directo no está firmado | No se construyó ni ejecutó el actualizador empaquetado |
+| La operativa completa funciona sin Internet | No confirmado | El servidor standalone funciona localmente sin iniciar integraciones Electron | No se aisló el proceso Electron de Internet durante un turno simulado |
+| Existe cumplimiento fiscal español | Bloqueado por hardware o información externa | Hay motor fiscal y tests propios, pero `docs/project/` lo mantiene `OUT_OF_SCOPE` | Requiere revisión normativa/especialista externa |
+| El inventario de dependencias y avisos está cerrado jurídicamente | Bloqueado por hardware o información externa | Lockfiles, npm audit y licencias declaradas se inventariaron | Falta SBOM, avisos de terceros y revisión del binario distribuido |
+
+Los estados reconciliados están en `docs/project/STATUS.md`,
+`FEATURE_MATRIX.md`, `TEST_MATRIX.md` y `RISK_REGISTER.md`. Ninguna capacidad
+se ha marcado `DONE` basándose solo en README, nombres de archivos o código no
+ejecutado.
+
 Fecha de observación: 2026-07-29 (Europe/Madrid)
 
 Versión de la aplicación: 2.4.7

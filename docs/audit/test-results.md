@@ -1,5 +1,52 @@
 # Resultados de instalación, compilación y pruebas
 
+## Repetición de reconciliación M0
+
+Esta repetición no sustituye la evidencia original que se conserva debajo.
+
+| Campo | Valor |
+| --- | --- |
+| Fecha | 2026-07-30 |
+| Sistema operativo | Windows 10 `10.0.19045`, PowerShell |
+| Node / npm | Node `v22.20.0`; npm `10.9.3` |
+| Commit analizado | `d366538fe1a5d798d5f6c6249b365e306e38efbc` |
+| Electron declarado / lock / runtime | `^43.2.0` / `43.2.0` / `v43.2.0` |
+
+| Comando exacto | Resultado | Evidencia y advertencias | Limitación |
+| --- | --- | --- | --- |
+| `node --version`; `npm.cmd --version` | Correcto | `v22.20.0`; `10.9.3` | No valida la toolchain nativa |
+| `npm.cmd ci` | Fallo, código 1 | `better-sqlite3`/node-gyp: VS Build Tools 2019/v142 presente, Windows SDK ausente; aviso deprecado `@types/bcryptjs`; limpieza `EPERM` | Bloquea una instalación raíz reproducible |
+| `npm.cmd ci --ignore-scripts` | Correcto, diagnóstico | 648 paquetes; 1 vulnerabilidad moderada | No ejecuta postinstall ni equivale a instalación válida |
+| `npx.cmd install-electron` | Correcto | `electron.exe --version` devolvió `v43.2.0` | Solo instala/verifica el runtime |
+| `npx.cmd electron-builder install-app-deps` | Fallo | El rebuild nativo vuelve a requerir un Windows SDK | El prebuild N-API incluido sí cargó en Node 22 y Electron 43, pero el gate de instalación sigue fallando |
+| `npm.cmd test` | Fallo inmediato | `"bash" no se reconoce` | No se ejecuta ninguna prueba con el comando literal |
+| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | Correcto | La cadena completa alcanzó `test:url-allowlist`; 8.324 líneas stdout y 129 stderr | Workaround de entorno; stderr incluye errores esperados de pruebas negativas |
+| `npm.cmd run test:upgrade-path` | Correcto | v0→v38, copia, integridad, FK, conservación, paridad de esquema e idempotencia | No valida todas las bases reales ni hace fail-closed la copia |
+| `npm.cmd run build` | Correcto | TypeScript y copia de assets terminaron con código 0 | No empaqueta Electron |
+| `npm.cmd run build:frontend` | Correcto con avisos | Next 16.2.12, 22 rutas estáticas; 9 vulnerabilidades altas de tooling | No es Playwright ni valida navegadores/dispositivos |
+| `node dev-server.js` | Correcto parcialmente | Un proceso Node abrió `0.0.0.0:3001` y `:3002`; API, DB, POS y KDS respondieron 200 | No arranca telemetría, updater, mDNS, Google/WhatsApp ni la ventana Electron |
+| Reinicio de `node dev-server.js` con pedido sintético | Correcto parcialmente | Tras reinicio: setup ya completo, login correcto, pedido 1 pendiente con un ítem recuperado, salud DB `ok` | La terminación no produjo logs de cierre graceful; no demuestra cierre limpio y abrupto por separado |
+| `npm.cmd audit --json` | Fallo por advisories, código 1 | 1 moderada en `tar`, transitiva de desarrollo | No se aplicó `npm audit fix` |
+| `cd frontend; npm.cmd audit --json` | Fallo por advisories, código 1 | 9 altas en cadenas de ESLint/minimatch/brace-expansion | No se actualizaron dependencias |
+
+Los artefactos sintéticos `flo.db*` y la copia premigración creada para el
+reinicio se retiraron del workspace a una carpeta temporal recuperable. Al
+terminar no quedaron listeners en 3001/3002 ni cambios funcionales.
+
+### Validación final después de reconciliar la documentación
+
+| Comando exacto | Resultado final | Advertencias / limitación |
+| --- | --- | --- |
+| `npm.cmd run lint` | Código 0 | 677 avisos backend preexistentes, 0 errores; frontend sin errores mostrados |
+| `npm.cmd run build` | Código 0 | Compilación TypeScript y assets correcta |
+| `npm.cmd run build:frontend` | Código 0 | 22 rutas estáticas; permanecen 9 advisories altas del tooling |
+| `npm.cmd run test:upgrade-path` | Código 0 | v0→v38, integridad, FK, conservación, paridad e idempotencia correctas |
+| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | Código 0 | Cadena completa hasta `test:url-allowlist`; 8.324 líneas stdout y 148 stderr |
+
+El stderr final vuelve a contener errores provocados por pruebas negativas y
+mensajes de diagnóstico; el código 0 y la ejecución de la última prueba
+confirman que la cadena no se interrumpió.
+
 Fecha: 2026-07-29
 
 Entorno: Windows, Node `v22.20.0`, npm `10.9.3`
@@ -100,7 +147,8 @@ Antes del arranque no había listeners en 3001/3002. El proceso observado creó:
 - Electron principal PID 10700 y procesos Chromium de GPU, red y renderer.
 - API/estático/WS en `0.0.0.0:3001`.
 - KDS REST/estático/WS en `0.0.0.0:3002`.
-- Anuncio mDNS de `flo.local`, con IP observada `192.168.1.34`.
+- Anuncio mDNS de `flo.local`, con una dirección LAN privada observada y
+  deliberadamente omitida de este repositorio público.
 - Base de desarrollo en
   `C:\Users\dario\Documents\tpv-abierto\flo.db`.
 - Logs y copias en el `userData` temporal suministrado.

@@ -1,5 +1,24 @@
 # Mapa de arquitectura observada
 
+## Contexto de reconciliación M0
+
+| Campo | Valor |
+| --- | --- |
+| Fecha | 2026-07-30 |
+| Sistema | Windows 10 `10.0.19045`, Node `v22.20.0`, npm `10.9.3` |
+| Commit analizado | `d366538fe1a5d798d5f6c6249b365e306e38efbc` |
+| Comandos de contraste | `npm.cmd run build`, `npm.cmd run build:frontend`, `node dev-server.js`, peticiones HTTP locales y revisión de código |
+| Resultado | La topología descrita permanece vigente; Electron/lockfile están en `43.2.0` |
+| Limitación | El arranque repetido usó el backend standalone; la auditoría inicial conserva la observación del proceso Electron completo |
+
+Durante la repetición, el proceso standalone único abrió API/POS/WS en
+`0.0.0.0:3001` y KDS/WS en `0.0.0.0:3002`. La salud, el HTML del POS y el HTML
+KDS respondieron 200. La base de desarrollo se creó en la raíz del checkout y
+la copia premigración en `backups/`; ambos eran sintéticos y se retiraron del
+workspace. Este método no inicia mDNS, telemetría, actualización, Google Drive,
+WhatsApp ni la ventana Electron, por lo que no sirve como prueba completa de
+operación offline del producto empaquetado.
+
 Este documento describe el código actual, no la arquitectura pretendida en
 especificaciones externas.
 

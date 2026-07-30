@@ -1,26 +1,40 @@
 # Risk register
 
-Scores use a simple 1-5 scale for probability and impact. Priority is probability × impact. Review this document at every milestone exit.
+Scores use a simple 1–5 scale for probability and impact. Priority is
+probability × impact. Review this document at every milestone exit.
 
-| ID | Risk | Probability | Impact | Priority | Current mitigation | Owner/status |
-|---|---|---:|---:|---:|---|---|
-| R-001 | FloCafe baseline is less mature than its interface and README suggest | 3 | 5 | 15 | Complete M0 audit before product changes | `OPEN` |
-| R-002 | Existing mobile/secondary-device flow is unsuitable for waiters | 4 | 4 | 16 | Validate on ordinary phones during M1; avoid assuming roadmap features exist | `OPEN` |
-| R-003 | Print jobs can be lost or duplicated during failures | 3 | 5 | 15 | Inspect queue model; add persistent IDs, state and failure tests if missing | `OPEN` |
-| R-004 | Electron resource use is too high for intended low-end hardware | 3 | 4 | 12 | Benchmark representative hardware before promising minimum requirements | `OPEN` |
-| R-005 | Updates or migrations damage an existing restaurant database | 2 | 5 | 10 | Preserve non-destructive migrations, pre-migration backups and upgrade fixtures | `OPEN` |
-| R-006 | Public repository accidentally receives customer data or credentials | 3 | 5 | 15 | Public-data policy, sanitised fixtures, secret scanning and PR review | `OPEN` |
-| R-007 | FloCafe upstream changes conflict with the fork | 4 | 3 | 12 | Keep custom changes modular; record upstream base and sync procedure | `OPEN` |
-| R-008 | Rebranding or packaging violates licences or trademarks | 2 | 5 | 10 | Preserve MIT notices; audit dependencies and brand use before release | `OPEN` |
-| R-009 | Product is presented as Spanish fiscal-compliant before validation | 3 | 5 | 15 | Keep fiscal scope deferred and require specialist sign-off | `OPEN` |
-| R-010 | VirtuaPOS data model cannot be fully reconstructed from available files | 3 | 4 | 12 | Acquire full `C:\BLATTA`; build graceful partial-import reports | `BLOCKED` |
-| R-011 | Restaurant network or hardware failures are blamed on the software | 5 | 4 | 20 | Health check, controlled appliance option, diagnostics and clear support boundaries | `OPEN` |
-| R-012 | No recurring fee leaves human support economically unsustainable | 4 | 4 | 16 | Design self-service diagnostics; price installation and interventions realistically | `OPEN` |
-| R-013 | AI support gives unsafe or invented repair instructions | 3 | 5 | 15 | AI may select only allow-listed deterministic procedures; no arbitrary commands | `OPEN` |
-| R-014 | Internet fallback design becomes more complex than the core product | 3 | 3 | 9 | Prioritise independent LAN; treat cellular and emergency AP as tested optional layers | `OPEN` |
-| R-015 | Scope expands into a full Restaurant OS before the pilot works | 5 | 4 | 20 | Enforce milestone gates and out-of-scope list in `PRODUCT_SPEC.md` | `OPEN` |
-| R-016 | Documentation drifts away from actual implementation | 4 | 3 | 12 | Require tracking-document updates in behaviour-changing PRs | `OPEN` |
-| R-017 | Upstream `AGENTS.md` contains stale versions or commands | 3 | 3 | 9 | Verify against `package.json`, scripts and actual command results during M0 | `OPEN` |
+This register was reconciled on 2026-07-30 against commit
+`d366538fe1a5d798d5f6c6249b365e306e38efbc` on Windows with Node `v22.20.0`
+and npm `10.9.3`. Technical evidence is in
+[production risks](../audit/production-risks.md) and
+[test results](../audit/test-results.md).
+
+| ID | Risk | Probability | Impact | Priority | Current mitigation / evidence | Owner / target | Mitigation status |
+|---|---|---:|---:|---:|---|---|---|
+| R-001 | FloCafe baseline is less mature than its interface and README suggest | 4 | 5 | 20 | M0 audit and tracking reconciliation exist; clean installation still fails | Project owner / M0 | `IN_PROGRESS` |
+| R-002 | Existing mobile/secondary-device flow is unsuitable for waiters | 4 | 4 | 16 | Validate on ordinary phones during M1; do not infer usability from responsive routes | Product owner / M1 | `UNVERIFIED` |
+| R-003 | Print jobs can be lost or duplicated during failures | 4 | 5 | 20 | Code has print history but no evidenced persistent job queue or atomic physical-print/audit transaction | Technical owner / M1 | `NOT_STARTED` |
+| R-004 | Electron resource use is too high for intended low-end hardware | 3 | 4 | 12 | Benchmark representative target hardware before publishing requirements | Technical owner / M1 | `UNVERIFIED` |
+| R-005 | Updates or migrations damage an existing restaurant database | 3 | 5 | 15 | v0→v38 happy path passes; premigration backup failure still logs and continues; released destructive migrations remain immutable | Technical owner / M0 | `PARTIAL` |
+| R-006 | Public repository accidentally receives customer data or credentials | 3 | 5 | 15 | Public-data policy and synthetic audit data used; secret scanning/fixture approval still need an owned gate | Project owner / M0 | `PARTIAL` |
+| R-007 | FloCafe upstream changes conflict with the fork | 4 | 3 | 12 | `upstream` remote is configured and baseline commit recorded; sync policy still needs an operational issue | Technical owner / M1 | `PARTIAL` |
+| R-008 | Rebranding or packaging violates licences or trademarks | 2 | 5 | 10 | MIT attribution preserved; no rebranding; third-party notices and packaged-binary review remain | Project owner / release | `PARTIAL` |
+| R-009 | Product is presented as Spanish fiscal-compliant before validation | 3 | 5 | 15 | Fiscal scope remains `OUT_OF_SCOPE` and documents prohibit a compliance claim | Product owner / M5 | `IN_PROGRESS` |
+| R-010 | VirtuaPOS data model cannot be fully reconstructed from available files | 3 | 4 | 12 | Acquire full source data outside Git; create only reviewed sanitised fixtures | Project owner / M3 | `BLOCKED` |
+| R-011 | Restaurant network or hardware failures are blamed on the software | 5 | 4 | 20 | Health endpoints exist; representative hardware/LAN failure campaign is unavailable | Operations owner / M1 | `BLOCKED` |
+| R-012 | No recurring fee leaves human support economically unsustainable | 4 | 4 | 16 | Define installation/support boundaries and validate self-service diagnostics | Business owner / M2 | `NOT_STARTED` |
+| R-013 | AI support gives unsafe or invented repair instructions | 3 | 5 | 15 | Keep AI optional and restrict actions to audited deterministic procedures | Product owner / M2 | `NOT_STARTED` |
+| R-014 | Internet fallback design becomes more complex than the core product | 3 | 3 | 9 | Prioritise independent LAN; treat cellular/emergency AP as optional tested layers | Product owner / M2 | `NOT_STARTED` |
+| R-015 | Scope expands into a full Restaurant OS before the pilot works | 5 | 4 | 20 | Milestone gates and explicit out-of-scope list exist | Product owner / all | `IN_PROGRESS` |
+| R-016 | Documentation drifts away from actual implementation | 4 | 3 | 12 | Project tracking is canonical; audit found and corrected Electron/dev-port drift | Technical owner / M0 | `PARTIAL` |
+| R-017 | Contributor guidance contains stale versions or commands | 2 | 3 | 6 | `AGENTS.md` now matches Electron 43; contributor dev-port text is corrected in this audit | Technical owner / M0 | `PARTIAL` |
+| R-018 | Optional cloud sync can expose more order/customer/payment data than its feature flags and documentation imply | 4 | 5 | 20 | Cloud is off by default and requires registration, but order/report flags do not gate all executable paths | Security owner / before cloud use | `NOT_STARTED` |
+| R-019 | LAN API/KDS traffic is plaintext and Electron sandboxing is reduced | 4 | 5 | 20 | JWT, roles, CSP, context isolation and URL allowlist exist; no TLS and both servers bind all interfaces | Security owner / M1 | `PARTIAL` |
+| R-020 | First-run telemetry may start before affirmative consent | 3 | 4 | 12 | Existing-install migration defaults differ, but fresh defaults/start order remain contradictory | Privacy owner / M1 | `NOT_STARTED` |
+| R-021 | Main-server port fallback can advertise/open a different port than the active listener | 3 | 4 | 12 | KDS reports its active port; main window/mDNS still use configured `PORT` | Technical owner / M1 | `NOT_STARTED` |
+| R-022 | Windows installation and recovery are not reproducible | 4 | 5 | 20 | Exact Node/npm and failure recorded; Windows SDK requirement and Bash runner remain unresolved | Technical owner / M0 | `BLOCKED` |
+| R-023 | A fork build can update from upstream or ship unsigned on Windows | 4 | 4 | 16 | Updates prompt before download, but direct builds point to `FreeOpenSourcePOS/FloCafe`; Windows signing/package path not tested | Release owner / before distribution | `UNVERIFIED` |
+| R-024 | Dependency advisories or copyleft/notice obligations are missed in distributed binaries | 3 | 4 | 12 | npm audits and lockfile licence inventory recorded; no SBOM or `THIRD_PARTY_NOTICES` | Release owner / before distribution | `PARTIAL` |
 
 ## Escalation rule
 
@@ -31,6 +45,11 @@ Any risk with priority 15 or greater must have:
 - a target milestone;
 - evidence before the affected milestone can exit.
 
+The role owners above do not replace named GitHub mitigation issues. Creating
+and assigning those issues is still required; their absence blocks the
+relevant milestone exit.
+
 ## Closed-risk rule
 
-Do not delete closed risks. Mark them `CLOSED`, record the date and link the evidence that reduced or eliminated them.
+Do not delete closed risks. Mark their mitigation status `DONE`, record the
+date and link the evidence that reduced or eliminated them.

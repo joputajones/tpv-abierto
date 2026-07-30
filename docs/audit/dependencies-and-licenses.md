@@ -1,5 +1,27 @@
 # Dependencias, servicios y licencias
 
+## Reconciliación M0
+
+| Campo | Valor |
+| --- | --- |
+| Fecha | 2026-07-30 |
+| Sistema | Windows 10 `10.0.19045`, Node `v22.20.0`, npm `10.9.3` |
+| Commit analizado | `d366538fe1a5d798d5f6c6249b365e306e38efbc` |
+| Comandos | Parseo completo de ambos lockfiles; `npm.cmd ci`; `npm.cmd audit --json` en raíz y frontend; carga de `better-sqlite3` en Node/Electron |
+| Resultado | Lockfiles v3 válidos: 673 entradas raíz y 764 frontend; Electron `43.2.0`, better-sqlite3 `13.0.1`, Next `16.2.12` |
+| Limitación | El inventario refleja metadatos declarados; no sustituye revisión jurídica ni análisis del binario empaquetado |
+
+`npm.cmd ci` sigue fallando en el rebuild exigido por el postinstall al no
+encontrar Windows SDK. Después de una instalación diagnóstica sin scripts, el
+prebuild N-API incluido por `better-sqlite3@13.0.1` cargó correctamente tanto
+en Node 22 (módulos 127) como en Electron 43 (módulos 148). Esto explica por qué
+las pruebas pueden ejecutarse, pero no convierte el `npm ci` fallido en una
+instalación reproducible.
+
+La repetición de `npm audit` conserva 1 vulnerabilidad moderada raíz (`tar`,
+transitiva de desarrollo) y 9 altas en tooling frontend. No se añadió,
+actualizó ni sustituyó ninguna dependencia.
+
 Fecha del inventario: 2026-07-29
 
 ## Dependencias directas principales

@@ -22,7 +22,10 @@ npm install
 npm run dev
 ```
 
-This launches both the Next.js dev server (port 3002) and the Electron app (port 3001 API).
+This builds the Next.js static export, serves it with the embedded Express API
+on port 3001, starts the standalone KDS server on port 3002, and launches
+Electron. For the browser-only Next.js development server (port 3000 by
+default), use `npm run dev:frontend`.
 
 ### macOS Gatekeeper & the Electron dev binary
 

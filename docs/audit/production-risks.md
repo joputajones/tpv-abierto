@@ -1,5 +1,33 @@
 # Riesgos para un despliegue real
 
+## Reconciliación con el registro oficial
+
+Fecha: 2026-07-30. Sistema: Windows 10 `10.0.19045`, Node `v22.20.0`, npm
+`10.9.3`. Commit analizado:
+`d366538fe1a5d798d5f6c6249b365e306e38efbc`.
+
+Los riesgos de esta auditoría se reflejan ahora en
+`docs/project/RISK_REGISTER.md`:
+
+| Riesgo técnico | ID oficial | Estado de mitigación | Evidencia / limitación |
+| --- | --- | --- | --- |
+| Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
+| Migración continúa sin copia previa | R-005 | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
+| API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
+| Instalación Windows no reproducible | R-022 | `BLOCKED` | `npm.cmd ci` falla sin Windows SDK |
+| Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
+| Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
+| Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
+| Telemetría antes de consentimiento | R-020 | `NOT_STARTED` | Confirmado por defaults/orden de arranque; sin captura HTTPS |
+| Operación offline | R-011 / CORE-004 | `UNVERIFIED` | Backend local funciona; Electron completo no fue aislado |
+| Distribución/actualización | R-023 | `UNVERIFIED` | Configuración apunta upstream; no se empaquetó |
+| Dependencias/licencias | R-024 | `PARTIAL` | Audit/lockfiles revisados; falta SBOM/revisión legal |
+| Fiscalidad española | R-009 | `OUT_OF_SCOPE` | Requiere evaluación externa; no se afirma cumplimiento |
+
+Los comandos y resultados exactos están en `test-results.md`. La repetición no
+reduce ningún P0/P1 por sí sola: confirma los bloqueos y evita convertir
+evidencia `CODE`/`SIM` en una afirmación de producción.
+
 Escala usada:
 
 - **P0**: impide autorizar un despliegue con datos reales.
