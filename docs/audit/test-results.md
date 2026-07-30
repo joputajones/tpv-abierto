@@ -1,5 +1,122 @@
 # Resultados de instalación, compilación y pruebas
 
+## Preparación de revisión de PR #14
+
+Fecha: 2026-07-31. Rama: `audit/m0-reconcile`. PR:
+[joputajones/tpv-abierto#14](https://github.com/joputajones/tpv-abierto/pull/14).
+
+Este trabajo de preparación solo ejecutó comprobaciones de Git, diagnóstico de
+entorno, consulta de GitHub Actions y validaciones documentales. No se volvió a
+ejecutar la suite local, los builds ni el servidor de desarrollo. Sus resultados
+históricos se conservan debajo sin presentarlos como una repetición actual.
+
+### Estado real de CI
+
+Se inspeccionó el workflow finalizado `30576660280`, asociado al commit
+`5ad1a37e8bd2ae522754d65c575927199896ce39`.
+
+| Job | Resultado | Clasificación |
+| --- | --- | --- |
+| `changes` | Correcto | El filtro clasificó la PR documental |
+| `Tax invariant — uncategorized products remain zero-tax` | Correcto | La instalación del job y la prueba de invariantes terminaron correctamente |
+| `dependency-review` | Fallo | Configuración/capacidad del repositorio: GitHub indica que Dependency Review no está soportado con la configuración actual |
+| `linux-baseline` | Omitido | Omitido por el filtro de rutas de una PR solo documental |
+| `e2e-playwright` | Omitido | Omitido por el filtro de rutas de una PR solo documental |
+
+El estado rojo no demuestra un fallo del código de aplicación ni de la
+documentación: el action de revisión de dependencias termina antes de evaluar
+el cambio porque la función requerida no está disponible. La corrección del
+workflow o de la configuración queda separada en el
+[issue #19](https://github.com/joputajones/tpv-abierto/issues/19); no se modificó
+`.github/workflows/ci.yml` en esta PR. Los logs también advierten que algunas
+acciones fijadas a Node 20 son forzadas a Node 24; el aviso no causó este fallo.
+
+### Diagnóstico exacto del entorno Windows
+
+| Elemento | Detectado | Versión o evidencia | Necesidad | Acción |
+| --- | --- | --- | --- | --- |
+| Node.js | Sí | `v22.20.0`, `C:\Program Files\nodejs\node.exe` | Requerido (`>=22`) | Ninguna |
+| npm | Sí | `10.9.3` | Requerido para los comandos del proyecto | Ninguna |
+| Python | Sí | `3.14.0`, seleccionado desde `C:\Python314\python.exe` | Requerido por node-gyp cuando compila | No es la causa inmediata observada |
+| VS Build Tools | Incompleto | Build Tools 2019 `16.11.36602.28`; estado `isComplete=false`, propiedad `canceled=1` | Requerido para reconstrucción nativa | Reparar/completar con privilegios de administrador |
+| MSVC x86/x64 | Parcialmente presente | Toolset `14.29.30133`; `cl.exe` `19.29.30159.0` | Requerido | Conservar; validar desde un Developer Prompt tras la reparación |
+| MSBuild | Sí dentro de VS | `16.11.6.22506` | Requerido por la toolchain | Validar desde un Developer Prompt |
+| Windows SDK | No utilizable | Registro apunta a Windows Kits 10, pero faltan `Include`, `Windows.h`, `kernel32.lib`, `rc.exe` y `mt.exe`; `WindowsSdkDir` queda vacío | Requerido para el rebuild nativo | Instalar un SDK Windows 10/11 compatible mediante Visual Studio Installer |
+| Git Bash | Sí, fuera de `PATH` | GNU Bash `5.3.15` en `C:\Program Files\Git\bin\bash.exe` | Requerido solo por el agregador actual `npm test` | Añadirlo temporalmente a `PATH` o hacer el runner multiplataforma en otra PR |
+
+`vswhere` encuentra la instancia y el componente
+`Microsoft.VisualStudio.Component.VC.Tools.x86.x64`, pero no satisface
+`Microsoft.VisualStudio.Workload.VCTools` ni
+`Microsoft.VisualStudio.Component.Windows10SDK.19041`. La lista del instalador
+conserva selecciones para C++ y SDK 19041, pero los archivos reales del SDK no
+están instalados. Por tanto, no debe confundirse una selección incompleta con
+un prerrequisito disponible ni prescribirse 19041 como versión obligatoria.
+
+La acción manual exacta está asignada al propietario en el
+[issue #18](https://github.com/joputajones/tpv-abierto/issues/18): abrir Visual
+Studio Installer como administrador, modificar o reparar Build Tools, completar
+**Desktop development with C++** (o componentes equivalentes) y un Windows
+10/11 SDK disponible. No se instaló ningún componente, no se cambió el registro
+y no se persistieron variables de entorno durante esta auditoría.
+
+Tras la reparación, ejecutar desde un Developer PowerShell o Developer Command
+Prompt:
+
+```powershell
+& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
+where.exe cl
+where.exe msbuild
+npm ci
+npm run verify:electron
+npm run build
+npm run build:frontend
+npm run test:upgrade-path
+$env:Path = 'C:\Program Files\Git\bin;' + $env:Path
+npm test
+```
+
+### Auditoría de privacidad del diff
+
+Se revisaron todos los archivos rastreados y, de forma separada, las líneas
+añadidas por `origin/main...HEAD` con búsquedas reproducibles de:
+
+- rutas de perfil Windows (`<unidad>:\Users\...`);
+- IPv4 privadas RFC 1918;
+- referencias a archivos `.db`/`.mdb`;
+- asignaciones aparentes de `password`, `secret`, `api_key`, `token` o `pin`;
+- `C:\BLATTA` y `VirtuaPOS`.
+
+Resultado final del escaneo sobre el árbol versionado y, por separado, sobre
+`docs/audit/`:
+
+| Categoría | Árbol completo (coincidencias/archivos) | `docs/audit/` (coincidencias/archivos) | Revisión |
+| --- | ---: | ---: | --- |
+| Rutas de perfil Windows | 0 / 0 | 0 / 0 | Sin rutas nominales después del saneamiento |
+| IPv4 privadas, búsqueda amplia | 159 / 26 | 12 / 5 | En la auditoría son falsos positivos de versiones; fuera de ella son versiones, rangos o ejemplos genéricos de código/documentación |
+| Referencias a ficheros de base de datos | 57 / 20 | 8 / 2 | Rutas genéricas, fixtures, código, ignores y artefactos sintéticos documentados |
+| Asignaciones con aspecto de credencial | 59 / 15 | 0 / 0 | Solo fixtures y valores sintéticos bajo `tests/` |
+| Referencias al sistema legado | 21 / 9 | 2 / 1 | Política y planificación documental; ningún fichero real |
+
+Antes del saneamiento aparecieron dos rutas de perfil local, ambas en este
+documento; se sustituyeron por `%LOCALAPPDATA%` y `<repo>`. Las coincidencias
+restantes de las otras categorías se revisaron como documentación genérica,
+direcciones de ejemplo, nombres de fixtures o credenciales sintéticas de
+tests. No se identificaron logs publicados, credenciales reales, datos de
+clientes, bases de restaurante ni un plan de red privado observado. El issue
+[R-006/#17](https://github.com/joputajones/tpv-abierto/issues/17) mantiene
+abierta la implantación de un gate automatizado y una política de fixtures.
+
+Comandos de referencia:
+
+```powershell
+git grep -nI -E -e '[A-Za-z]:\\Users\\[^\\[:space:]]+' --
+git grep -nI -E -e '(192\.168\.|10\.[0-9]{1,3}\.|172\.(1[6-9]|2[0-9]|3[01])\.)' --
+git grep -nI -E -e '\.(db|mdb)([^A-Za-z0-9]|$)' --
+git grep -nI -E -e '(password|passwd|secret|api[_-]?key|token|pin)[[:space:]]*[:=]' --
+git grep -nI -E -e '(C:\\BLATTA|VirtuaPOS)' --
+git diff --unified=0 origin/main...HEAD
+```
+
 ## Repetición de reconciliación M0
 
 Esta repetición no sustituye la evidencia original que se conserva debajo.
@@ -70,7 +187,7 @@ Entorno: Windows, Node `v22.20.0`, npm `10.9.3`
 
 El log de npm de la instalación fallida quedó en:
 
-`C:\Users\dario\AppData\Local\npm-cache\_logs\2026-07-29T21_04_17_018Z-debug-0.log`
+`%LOCALAPPDATA%\npm-cache\_logs\<timestamp>-debug-0.log`
 
 ## Instalación
 
@@ -150,7 +267,7 @@ Antes del arranque no había listeners en 3001/3002. El proceso observado creó:
 - Anuncio mDNS de `flo.local`, con una dirección LAN privada observada y
   deliberadamente omitida de este repositorio público.
 - Base de desarrollo en
-  `C:\Users\dario\Documents\tpv-abierto\flo.db`.
+  `<repo>\flo.db`.
 - Logs y copias en el `userData` temporal suministrado.
 
 `GET http://127.0.0.1:3001/api/health` respondió con base correcta, servicio

@@ -11,9 +11,9 @@ and npm `10.9.3`. See [test results](../audit/test-results.md).
 
 | ID | Capability | Current status | Target milestone | Acceptance summary | M0 evidence / gap |
 |---|---|---|---|---|---|
-| CORE-001 | Reproducible Windows development setup | `BLOCKED` | M0 | Fresh clone installs, builds and launches using documented commands | Root `npm.cmd ci` fails because Windows SDK is missing; build works only after diagnostic install without scripts |
+| CORE-001 | Reproducible Windows development setup | `BLOCKED` | M0 | Fresh clone installs, builds and launches using documented commands | Root `npm.cmd ci` fails: Build Tools is incomplete/cancelled and has no usable Windows SDK; owner repair is tracked in [#18](https://github.com/joputajones/tpv-abierto/issues/18) |
 | CORE-002 | SQLite data persistence | `PARTIAL` | M0 | Confirmed order survives clean restart and abrupt app restart test | Synthetic order survived one process termination/restart; graceful and abrupt cases are not both evidenced |
-| CORE-003 | Safe database migration path | `PARTIAL` | M0 | Existing-data fixture upgrades with backup and no destructive loss | v0→v38 fixture passes; backup failure does not abort and released migrations include destructive operations |
+| CORE-003 | Safe database migration path | `PARTIAL` | M0 | Existing-data fixture upgrades with backup and no destructive loss | v0→v38 fixture passes; backup failure does not abort and released migrations include destructive operations; decision/fix tracked in [#16](https://github.com/joputajones/tpv-abierto/issues/16) |
 | CORE-004 | Local-only operation | `UNVERIFIED` | M1 | Core order flow works with internet disconnected | Standalone server is local, but no full Electron Internet-isolation test was run |
 | ORDER-001 | Products and categories | `PARTIAL` | M1 | Create, edit, search and order disposable catalogue items | Automated product/category/order paths pass; full acceptance workflow was not manually executed |
 | ORDER-002 | Modifiers and addon groups | `PARTIAL` | M1 | Modifier choices persist and route correctly | Addon and kitchen parsing tests pass; no physical routing evidence |

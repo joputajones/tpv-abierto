@@ -18,6 +18,34 @@ canónica incorporada por el PR #13.
 | Main integrado | `080e9c636663d8052567db3ab68d8d40ad483fff` |
 | Fuente oficial de seguimiento | `docs/project/` |
 
+### Estado de gobierno para revisión
+
+La reconciliación se prepara en la
+[PR #14](https://github.com/joputajones/tpv-abierto/pull/14), que permanece
+abierta, en borrador y sin fusionar. M0 sigue `IN_PROGRESS`: la evidencia
+dependiente de esta PR es `PARTIAL` hasta su revisión y merge, y la instalación
+limpia de Windows continúa `BLOCKED`.
+
+La trazabilidad se distribuye así:
+
+- [#15](https://github.com/joputajones/tpv-abierto/issues/15): gobierno y salida
+  de M0;
+- [#16](https://github.com/joputajones/tpv-abierto/issues/16): migración
+  fail-closed, R-005;
+- [#17](https://github.com/joputajones/tpv-abierto/issues/17): protección de
+  datos públicos, R-006;
+- [#18](https://github.com/joputajones/tpv-abierto/issues/18): instalación y
+  recuperación Windows, R-022;
+- [#19](https://github.com/joputajones/tpv-abierto/issues/19): señal de
+  dependency review en CI, R-025.
+
+El workflow observado en la PR no está verde: `changes` y el invariante fiscal
+pasaron, Linux/Playwright se omitieron por rutas documentales y
+`dependency-review` falló porque el repositorio no soporta actualmente la
+función requerida. Es un bloqueo de configuración de CI, no evidencia de un
+fallo de aplicación. Los detalles están en
+[resultados de pruebas](test-results.md).
+
 No existe `specs/` en este checkout. Las referencias a especificaciones
 privadas siguen siendo externas y no se han conectado al repositorio, al build
 ni al runtime.

@@ -1,6 +1,6 @@
 # Development status
 
-**Snapshot date:** 2026-07-30
+**Snapshot date:** 2026-07-31
 
 **Overall phase:** Phase 0 — baseline audit
 
@@ -14,12 +14,13 @@ rechecked on Windows at merge commit
 `d366538fe1a5d798d5f6c6249b365e306e38efbc` with Node `v22.20.0` and npm
 `10.9.3`.
 
-The TypeScript build, frontend static export, database upgrade-path test and
-complete automated suite pass in the audited checkout. The suite only starts
-after Git Bash is added to `PATH`, and a clean root `npm ci` remains blocked
-because the installed Visual Studio Build Tools have no Windows SDK. A
-synthetic order survived a controlled process termination and restart through
-the recommended standalone development server, but a graceful Electron
+The historical audit evidence reports that the TypeScript build, frontend
+static export, database upgrade-path test and complete automated suite passed
+in the audited checkout. The suite only started after Git Bash was added to
+`PATH`, and a clean root `npm ci` remains blocked because the Visual Studio
+Build Tools installation is incomplete/cancelled and has no usable Windows
+SDK. A synthetic order survived a controlled process termination and restart
+through the recommended standalone development server, but a graceful Electron
 shutdown and abrupt-power-loss cycle have not both been demonstrated.
 
 These results improve confidence in the code baseline; they do not establish
@@ -37,9 +38,9 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 |---|---|---|
 | Public GitHub repository exists | `DONE` | `joputajones/tpv-abierto`; PR #13 is merged into `main` |
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
-| Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; verified with `git remote -v` |
-| Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0` |
-| Clean dependency installation | `BLOCKED` | `npm.cmd ci` exits 1: VS Build Tools 2019/v142 found, Windows SDK missing |
+| Upstream remote configured locally | `PARTIAL` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence is in unmerged PR #14 |
+| Development environment recorded | `PARTIAL` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence is in unmerged PR #14 |
+| Clean dependency installation | `BLOCKED` | `npm.cmd ci` exits 1: Build Tools 2019 is incomplete/cancelled; MSVC exists but a usable Windows SDK does not |
 | Baseline test suite | `PARTIAL` | Literal `npm.cmd test` cannot find `bash`; the full chain passes after adding Git Bash to process `PATH` |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
 | Main TypeScript build | `PARTIAL` | `npm.cmd run build` passes; evidence is in the unmerged audit PR |
@@ -51,7 +52,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
 | Backup and restore validation | `PARTIAL` | Automated disposable backup/restore and migration backup paths pass; no off-device restore drill or second-person procedure |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
-| Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set |
+| Architecture and production risks | `PARTIAL` | Reconciled under `docs/audit/` and this tracking set; PR #14 is not merged |
+| PR #14 governance evidence | `PARTIAL` | Draft, open and unmerged; CI is red only because unsupported `dependency-review` fails (issue #19) |
 | VirtuaPOS catalogue analysis | `PARTIAL` | Initial analysis exists outside the public repository; no reviewed sanitised fixture is committed |
 | Full `C:\BLATTA` acquisition | `BLOCKED` | Requires another restaurant visit; raw contents must remain outside the public repository |
 | VirtuaPOS importer | `NOT_STARTED` | Cannot be considered implemented |
@@ -69,16 +71,25 @@ built, launched and understood before product changes begin.
 
 Exit criteria:
 
-- [x] Local repository remotes and branches recorded.
-- [x] Node and npm versions recorded.
+- [ ] Local repository remotes and branches recorded; evidence collected in PR
+      #14, pending review and merge.
+- [ ] Node and npm versions recorded; evidence collected in PR #14, pending
+      review and merge.
 - [ ] Clean dependency installation completed.
-- [x] Existing tests completed and failures documented.
-- [x] Main build completed.
-- [x] Frontend build completed.
-- [x] Application launched on Windows.
-- [x] Database, logs and backup paths recorded.
-- [x] One disposable order survives an application process restart.
-- [x] Baseline architecture and production risks documented.
+- [ ] Existing tests completed and failures documented; historical evidence is
+      in PR #14, pending review and merge.
+- [ ] Main build completed; historical evidence is in PR #14, pending review
+      and merge.
+- [ ] Frontend build completed; historical evidence is in PR #14, pending
+      review and merge.
+- [ ] Application launched on Windows; historical evidence is in PR #14,
+      pending review and merge.
+- [ ] Database, logs and backup paths recorded in PR #14, pending review and
+      merge.
+- [ ] One disposable order survives an application process restart; historical
+      evidence is in PR #14, pending review and merge.
+- [ ] Baseline architecture and production risks documented in PR #14, pending
+      review and merge.
 
 M0 remains `IN_PROGRESS`: a fresh root installation is blocked, the final
 evidence PR is not merged, and clean/abrupt restart behaviour still needs a
@@ -86,21 +97,27 @@ complete controlled matrix.
 
 ## Immediate next actions
 
-1. Make `npm ci` reproducible on a clean Windows machine and document the exact
-   C++/Windows SDK prerequisites.
-2. Make the test runner cross-platform or formally document Git Bash, then
-   reproduce the complete suite from the clean installation.
-3. Make premigration backup failure stop migrations and add a regression test
-   without editing released migrations.
+1. Complete the owner/admin repair and clean-install validation in
+   [#18](https://github.com/joputajones/tpv-abierto/issues/18).
+2. Make the test runner cross-platform or formally retain Git Bash as a
+   prerequisite, then reproduce the complete suite from the clean installation.
+3. Resolve the fail-closed decision in
+   [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
+   premigration backups without editing released migrations.
 4. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 5. Run the M1 bench gate with representative printer hardware, two local
    clients, KDS and Internet/LAN failure scenarios.
+6. Restore a meaningful dependency-review CI signal through
+   [#19](https://github.com/joputajones/tpv-abierto/issues/19), outside PR #14.
 
 ## Blockers
 
-- The audited Windows environment has no usable Windows SDK for the native
-  dependency rebuild.
+- The audited Windows environment has an incomplete/cancelled Build Tools 2019
+  instance: MSVC exists, but no usable Windows SDK is installed. Repair requires
+  an owner/admin action tracked in issue #18.
+- CI remains red because `dependency-review` is unsupported with the current
+  repository configuration; tracked separately in issue #19.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
   router-failure setup are unavailable.
 - Complete, reviewed and sanitised VirtuaPOS fixtures are unavailable.

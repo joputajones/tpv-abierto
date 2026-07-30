@@ -27,8 +27,8 @@ evidence alone.
 
 | Exact command | Result | Evidence and limitation |
 |---|---|---|
-| `node --version`; `npm.cmd --version` | `DONE` | Returned `v22.20.0` and `10.9.3` |
-| `npm.cmd ci` | `BLOCKED` | Exit 1; native rebuild finds VS 2019/v142 but no Windows SDK |
+| `node --version`; `npm.cmd --version` | `PARTIAL` | Returned `v22.20.0` and `10.9.3`; evidence is in unmerged PR #14 |
+| `npm.cmd ci` | `BLOCKED` | Exit 1; Build Tools 2019 is incomplete/cancelled: MSVC exists, but no usable Windows SDK is installed ([#18](https://github.com/joputajones/tpv-abierto/issues/18)) |
 | `npm.cmd ci --ignore-scripts` | `PARTIAL` | 648 packages; diagnostic only, not a valid production install; 1 moderate advisory |
 | `npx.cmd install-electron` | `PARTIAL` | Electron runtime `v43.2.0` available; native app-dependency rebuild still fails |
 | `npm.cmd test` | `BLOCKED` | Literal command exits 1 because `bash` is absent from `PATH` |

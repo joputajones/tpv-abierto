@@ -3,7 +3,7 @@
 Scores use a simple 1–5 scale for probability and impact. Priority is
 probability × impact. Review this document at every milestone exit.
 
-This register was reconciled on 2026-07-30 against commit
+This register was reconciled on 2026-07-31 against commit
 `d366538fe1a5d798d5f6c6249b365e306e38efbc` on Windows with Node `v22.20.0`
 and npm `10.9.3`. Technical evidence is in
 [production risks](../audit/production-risks.md) and
@@ -11,12 +11,12 @@ and npm `10.9.3`. Technical evidence is in
 
 | ID | Risk | Probability | Impact | Priority | Current mitigation / evidence | Owner / target | Mitigation status |
 |---|---|---:|---:|---:|---|---|---|
-| R-001 | FloCafe baseline is less mature than its interface and README suggest | 4 | 5 | 20 | M0 audit and tracking reconciliation exist; clean installation still fails | Project owner / M0 | `IN_PROGRESS` |
+| R-001 | FloCafe baseline is less mature than its interface and README suggest | 4 | 5 | 20 | M0 audit and tracking reconciliation are under review; clean installation still fails | [joputajones / #15](https://github.com/joputajones/tpv-abierto/issues/15) / M0 | `IN_PROGRESS` |
 | R-002 | Existing mobile/secondary-device flow is unsuitable for waiters | 4 | 4 | 16 | Validate on ordinary phones during M1; do not infer usability from responsive routes | Product owner / M1 | `UNVERIFIED` |
 | R-003 | Print jobs can be lost or duplicated during failures | 4 | 5 | 20 | Code has print history but no evidenced persistent job queue or atomic physical-print/audit transaction | Technical owner / M1 | `NOT_STARTED` |
 | R-004 | Electron resource use is too high for intended low-end hardware | 3 | 4 | 12 | Benchmark representative target hardware before publishing requirements | Technical owner / M1 | `UNVERIFIED` |
-| R-005 | Updates or migrations damage an existing restaurant database | 3 | 5 | 15 | v0→v38 happy path passes; premigration backup failure still logs and continues; released destructive migrations remain immutable | Technical owner / M0 | `PARTIAL` |
-| R-006 | Public repository accidentally receives customer data or credentials | 3 | 5 | 15 | Public-data policy and synthetic audit data used; secret scanning/fixture approval still need an owned gate | Project owner / M0 | `PARTIAL` |
+| R-005 | Updates or migrations damage an existing restaurant database | 3 | 5 | 15 | v0→v38 happy path passes; premigration backup failure still logs and continues; released destructive migrations remain immutable | [joputajones / #16](https://github.com/joputajones/tpv-abierto/issues/16) / M0 | `PARTIAL` |
+| R-006 | Public repository accidentally receives customer data or credentials | 3 | 5 | 15 | Public-data policy and synthetic audit data used; secret scanning/fixture approval still need an owned gate | [joputajones / #17](https://github.com/joputajones/tpv-abierto/issues/17) / M0 | `PARTIAL` |
 | R-007 | FloCafe upstream changes conflict with the fork | 4 | 3 | 12 | `upstream` remote is configured and baseline commit recorded; sync policy still needs an operational issue | Technical owner / M1 | `PARTIAL` |
 | R-008 | Rebranding or packaging violates licences or trademarks | 2 | 5 | 10 | MIT attribution preserved; no rebranding; third-party notices and packaged-binary review remain | Project owner / release | `PARTIAL` |
 | R-009 | Product is presented as Spanish fiscal-compliant before validation | 3 | 5 | 15 | Fiscal scope remains `OUT_OF_SCOPE` and documents prohibit a compliance claim | Product owner / M5 | `IN_PROGRESS` |
@@ -32,9 +32,10 @@ and npm `10.9.3`. Technical evidence is in
 | R-019 | LAN API/KDS traffic is plaintext and Electron sandboxing is reduced | 4 | 5 | 20 | JWT, roles, CSP, context isolation and URL allowlist exist; no TLS and both servers bind all interfaces | Security owner / M1 | `PARTIAL` |
 | R-020 | First-run telemetry may start before affirmative consent | 3 | 4 | 12 | Existing-install migration defaults differ, but fresh defaults/start order remain contradictory | Privacy owner / M1 | `NOT_STARTED` |
 | R-021 | Main-server port fallback can advertise/open a different port than the active listener | 3 | 4 | 12 | KDS reports its active port; main window/mDNS still use configured `PORT` | Technical owner / M1 | `NOT_STARTED` |
-| R-022 | Windows installation and recovery are not reproducible | 4 | 5 | 20 | Exact Node/npm and failure recorded; Windows SDK requirement and Bash runner remain unresolved | Technical owner / M0 | `BLOCKED` |
+| R-022 | Windows installation and recovery are not reproducible | 4 | 5 | 20 | Build Tools 2019 is incomplete/cancelled; MSVC exists, no usable SDK is installed, and Bash is outside normal `PATH` | [joputajones / #18](https://github.com/joputajones/tpv-abierto/issues/18) / M0 | `BLOCKED` |
 | R-023 | A fork build can update from upstream or ship unsigned on Windows | 4 | 4 | 16 | Updates prompt before download, but direct builds point to `FreeOpenSourcePOS/FloCafe`; Windows signing/package path not tested | Release owner / before distribution | `UNVERIFIED` |
 | R-024 | Dependency advisories or copyleft/notice obligations are missed in distributed binaries | 3 | 4 | 12 | npm audits and lockfile licence inventory recorded; no SBOM or `THIRD_PARTY_NOTICES` | Release owner / before distribution | `PARTIAL` |
+| R-025 | CI reports a permanent dependency-review failure instead of a meaningful dependency signal | 4 | 3 | 12 | PR #14 confirms the action is unsupported by current repository configuration; application invariant job passes | [joputajones / #19](https://github.com/joputajones/tpv-abierto/issues/19) / M0 | `BLOCKED` |
 
 ## Escalation rule
 
@@ -45,9 +46,10 @@ Any risk with priority 15 or greater must have:
 - a target milestone;
 - evidence before the affected milestone can exit.
 
-The role owners above do not replace named GitHub mitigation issues. Creating
-and assigning those issues is still required; their absence blocks the
-relevant milestone exit.
+Named issues now govern R-005, R-006 and R-022. The M0 exit review is tracked
+in issue #15 and the CI configuration gap in issue #19. Other priority-15+
+risks still require a named and assigned issue before their affected milestone
+can exit.
 
 ## Closed-risk rule
 

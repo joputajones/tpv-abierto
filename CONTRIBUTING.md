@@ -27,6 +27,38 @@ on port 3001, starts the standalone KDS server on port 3002, and launches
 Electron. For the browser-only Next.js development server (port 3000 by
 default), use `npm run dev:frontend`.
 
+### Windows native-build prerequisites
+
+The root install rebuilds native modules, including `better-sqlite3`. On
+Windows, use a completed Visual Studio Build Tools installation with the
+**Desktop development with C++** workload (or equivalent MSVC x86/x64 tools)
+and a usable Windows 10 or Windows 11 SDK. Merely having `cl.exe` or setting
+`GYP_MSVS_VERSION` is not sufficient when the SDK headers and libraries are
+absent.
+
+After installing or repairing those components through Visual Studio Installer,
+open a Developer PowerShell or Developer Command Prompt and verify:
+
+```powershell
+& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
+where.exe cl
+where.exe msbuild
+npm ci
+npm run verify:electron
+```
+
+The current root test aggregator invokes Bash. Git for Windows includes it at
+`C:\Program Files\Git\bin\bash.exe`, but that directory may not be on the normal
+PowerShell `PATH`. Until the runner is made cross-platform, expose it only for
+the current shell:
+
+```powershell
+$env:Path = 'C:\Program Files\Git\bin;' + $env:Path
+npm test
+```
+
+Do not use `setx` solely for this workaround.
+
 ### macOS Gatekeeper & the Electron dev binary
 
 Electron 43 removed the old automatic postinstall download (a supply-chain

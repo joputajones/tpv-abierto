@@ -12,9 +12,11 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Riesgo técnico | ID oficial | Estado de mitigación | Evidencia / limitación |
 | --- | --- | --- | --- |
 | Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
-| Migración continúa sin copia previa | R-005 | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
+| Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
+| Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 | `BLOCKED` | `npm.cmd ci` falla sin Windows SDK |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `BLOCKED` | Build Tools incompleto/cancelado; MSVC presente y SDK utilizable ausente |
+| Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `BLOCKED` | El action falla por capacidad/configuración del repositorio |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
 | Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
@@ -67,7 +69,9 @@ expectativa de seguridad del README.
 **Acción recomendada:** hacer que el backup previo sea fail-closed para una base
 existente, verificar legibilidad/integridad de la copia, probar disco lleno y
 permisos, y ensayar una base real anonimizada desde cada versión relevante. No
-editar migraciones ya publicadas; añadir protección alrededor del lote.
+editar migraciones ya publicadas; añadir protección alrededor del lote. La
+decisión humana pendiente y sus criterios están en el
+[issue #16](https://github.com/joputajones/tpv-abierto/issues/16).
 
 ## P1 — API LAN sin cifrado y sandbox reducido
 
@@ -92,9 +96,11 @@ de emparejado seguro antes de despliegues no controlados.
 
 ## P1 — Instalación no reproducible en Windows auditado
 
-**Hecho observado:** `npm install` falla al reconstruir `better-sqlite3` porque
-falta Windows SDK. `npm test` falla si Git Bash no está en `PATH`. El script
-`npm run clean` no detiene el Electron que acaba de arrancar.
+**Hecho observado:** `npm install` falla al reconstruir `better-sqlite3`. La
+instancia de VS Build Tools 2019 figura incompleta/cancelada: MSVC v142,
+`cl.exe` y MSBuild existen, pero no hay headers, librerías ni herramientas de
+un Windows SDK utilizable. `npm test` falla si Git Bash no está en `PATH`. El
+script `npm run clean` no detiene el Electron que acaba de arrancar.
 
 **Por qué importa:** onboarding de colaboradores, CI de Windows, recuperación
 urgente y builds de release pueden depender de estado previo de `node_modules`
@@ -104,7 +110,9 @@ determinista.
 **Acción recomendada:** documentar y automatizar prerrequisitos exactos
 (Node 22, Git Bash o runner multiplataforma, VS Build Tools/Windows SDK),
 verificar una instalación limpia con `npm ci` y corregir la identificación del
-proceso de `kill-ports.js`.
+proceso de `kill-ports.js`. La reparación manual con privilegios y la secuencia
+de validación están asignadas en el
+[issue #18](https://github.com/joputajones/tpv-abierto/issues/18).
 
 ## P1 — Impresión sin validación de hardware objetivo
 
