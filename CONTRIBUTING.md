@@ -22,7 +22,54 @@ npm install
 npm run dev
 ```
 
-This launches both the Next.js dev server (port 3002) and the Electron app (port 3001 API).
+This builds the Next.js static export, serves it with the embedded Express API
+on port 3001, starts the standalone KDS server on port 3002, and launches
+Electron. For the browser-only Next.js development server (port 3000 by
+default), use `npm run dev:frontend`.
+
+### Windows native-build prerequisites
+
+The root install rebuilds native modules, including `better-sqlite3`. On
+Windows, use a completed Visual Studio Build Tools installation with the
+**Desktop development with C++** workload (or equivalent MSVC x86/x64 tools)
+and a usable Windows 10 or Windows 11 SDK. Merely having `cl.exe` or setting
+`GYP_MSVS_VERSION` is not sufficient when the SDK headers and libraries are
+absent.
+
+After installing or repairing those components through Visual Studio Installer,
+open a Developer PowerShell or Developer Command Prompt and verify:
+
+```powershell
+& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
+where.exe cl
+where.exe msbuild
+```
+
+The current root postinstall verifier and test aggregator both invoke Bash. Git
+for Windows includes it at `C:\Program Files\Git\bin\bash.exe`, but that
+directory may not be on the normal PowerShell `PATH`. Until those scripts are
+made cross-platform, expose it only for the current shell before running
+`npm ci` or `npm test`:
+
+```powershell
+$originalPath = $env:Path
+try {
+  $env:Path = 'C:\Program Files\Git\bin;' + $env:Path
+  bash --version
+  npm ci
+  npm run verify:electron
+  npm test
+} finally {
+  $env:Path = $originalPath
+}
+```
+
+Do not use `setx` solely for this workaround.
+
+PR #21 contains a cross-platform Node-based replacement and evidence that these
+commands pass in ordinary PowerShell without Bash. Until that PR is reviewed and
+merged, the instructions above remain the behaviour and workaround for current
+`main`; do not treat the pending branch as an installed prerequisite change.
 
 ### macOS Gatekeeper & the Electron dev binary
 

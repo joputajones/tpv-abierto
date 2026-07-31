@@ -130,6 +130,9 @@ approved.
 
 ### Validation evidence
 
+- PR #24 merged into `main` as
+  `38abca3f0d149c6d245adc0a19705c828b1d70aa`; its `Closes #19` reference closed
+  the configuration issue after the controls below passed.
 - Documentation-only PR #14, workflow run `30628431839` attempt 2: the action
   executed and passed; `changes` and the tax invariant passed, while Linux and
   Playwright were visibly skipped by path filtering.
