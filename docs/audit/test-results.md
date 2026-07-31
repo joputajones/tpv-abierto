@@ -547,3 +547,63 @@ confianza para producción sigue limitada por cuatro ausencias:
 4. No hay pruebas de estrés, corte eléctrico, pérdida de red, disco lleno,
    recuperación tras corrupción o concurrencia sostenida de varios
    comandero/KDS.
+
+## Validación de backup fuera del equipo — rama de revisión
+
+- Fecha: 2026-08-01
+- Rama: `test/off-device-backup-restore`
+- Base inicial: `731455a7fa5068af988011cf72908b8eb417e085`
+- Entorno: Windows 10, PowerShell, Node `v22.20.0`, npm `10.9.3`
+
+### Línea base antes del cambio
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:backup` | 0 / 1,3 s | 10/10 del test histórico simplificado |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 / 5,3 s | Barreras negativas, copia v0 y reintento pasan |
+| `npm.cmd run test:restart-recovery` | 1 / 31,2 s | Primer intento: R-01 agotó su espera de readiness de 30 s; la limpieza del sandbox pasó |
+| repetición aislada de `npm.cmd run test:restart-recovery` | 0 / 31,9 s | R-01…R-12 y limpieza pasan; R-01 tardó 6,1 s |
+
+El timeout inicial existía antes de modificar archivos y no se oculta. La
+repetición autorizada pasó y una ejecución posterior completa también pasó,
+con R-01 en 27,1 s; esto muestra variabilidad relevante cerca del límite de 30
+segundos aunque no bloqueó esta validación.
+
+### Protocolo posterior al cambio
+
+| Comando exacto | Código / duración | Resultado, avisos y límite |
+|---|---:|---|
+| `where.exe bash` | 1 | Bash no está disponible y no fue añadido al `PATH`; resultado esperado |
+| `npm.cmd ci` | 0 / 35,8 s | Instalación limpia y postinstall correctos; aviso preexistente por `@types/bcryptjs` deprecado |
+| `npm.cmd run test:off-device-restore` | 0 / 7,8 s | Productor, transporte, consumidor aislado, reapertura, escritura posterior y B-01…B-07 pasan en Windows |
+| `npm.cmd run test:restart-recovery` | 0 / 54,4 s | R-01…R-12, 18 observaciones WAL/SHM y limpieza; R-01 tardó 27,1 s |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 / 2,3 s | Todos los fallos obligatorios bloquean y el camino verificado pasa |
+| `npm.cmd run test:upgrade-path` | 0 / 1,8 s | v0→v38, integridad, FK, conservación, paridad e idempotencia |
+| `npm.cmd run test:backup` | 0 / 1,1 s | 10/10 del test histórico |
+| `npm.cmd run test:schema-health` | 0 / 1,5 s | Esquema fresco y migrado sin deriva; reparaciones seguras pasan |
+| `npm.cmd run lint` | 0 / 31,8 s | 0 errores; 676 avisos backend preexistentes; frontend limpio |
+| `npm.cmd run build` | 0 / 14,1 s | TypeScript y assets de runtime correctos |
+| `npm.cmd run build:frontend` | 0 / 52,9 s | `npm ci` frontend sin vulnerabilidades y export estático de 22 rutas |
+| `npm.cmd test` | 0 / 178,3 s | Los 68 scripts terminan sin Bash; el último es `test:cross-platform-scripts` |
+
+Tras endurecer la comparación de secuencias al cruzar medianoche y el escaneo
+de marcadores privados, se repitieron `test:off-device-restore`,
+`test:cross-platform-scripts`, lint, ambos builds y los 68 scripts. La segunda
+suite completa terminó con código 0 en 186,1 s; lint mantuvo 0 errores/676
+avisos y el frontend volvió a exportar 22 rutas con 0 vulnerabilidades en su
+instalación limpia.
+
+La suite completa conserva stderr ruidoso por negativos deliberados: cloud no
+registrado, JSON de pago inválido, reglas fiscales inexistentes, saldos
+insuficientes, impresión de factura inexistente y held-order inválida. Son
+expectativas de tests que terminan con código 0, no fallos omitidos.
+
+### Alcance de la evidencia local
+
+El paquete local contiene exactamente cuatro archivos sintéticos y efímeros;
+el test borra productor, destinos y copias mutadas. Ninguna base, WAL/SHM, ZIP,
+checksum real, log o artifact se versiona. Esta ejecución prueba procesos y
+sandboxes separados en un host Windows (`SIM`). El workflow propuesto debe
+aportar todavía la transferencia real Windows→artifact→Windows/Linux para
+elevar la parte automatizada a `CI_CROSS_RUNNER`. La ejecución humana en otro
+equipo físico sigue sin realizarse.
