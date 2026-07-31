@@ -99,6 +99,67 @@ A pull request must contain:
 
 A documentation-only PR may state that runtime tests are not applicable, but must still check links and internal consistency.
 
+## Dependency review policy (R-025)
+
+The repository's **Dependency Graph** setting must remain enabled. The owner
+enabled it on 2026-07-31 after `dependency-review` had failed before evaluating
+any change with: `Dependency review is not supported on this repository`.
+Re-running the unchanged workflow then succeeded, so no workflow fallback or
+permission expansion was required.
+
+`.github/workflows/ci.yml` runs `dependency-review` for every
+`pull_request` targeting `main`. The job uses read-only `contents` and
+`pull-requests` permissions and pins
+`actions/dependency-review-action` v4.5.0 by commit SHA. Its policy is:
+
+- fail when a PR introduces a vulnerability with severity `high` or
+  `critical` (`fail-on-severity: high`);
+- do not use `continue-on-error` or the action's `warn-only` override;
+- execute for documentation-only PRs and return an explicit pass when no
+  dependency change is present;
+- evaluate root and `frontend/` manifests and lockfiles when they change;
+- skip intentionally on `push` events because the job condition requires
+  `github.event_name == 'pull_request'`.
+
+An absent job is not evidence of success. Record whether the result is
+`PASS`, an intentional `SKIP`, or `FAIL`, and inspect the action log for real
+dependency changes. The current repository has no branch protection or
+ruleset requiring this status, so maintainers must treat a red
+`dependency-review` as a manual merge blocker until an enforced ruleset is
+approved.
+
+### Validation evidence
+
+- PR #24 merged into `main` as
+  `38abca3f0d149c6d245adc0a19705c828b1d70aa`; its `Closes #19` reference closed
+  the configuration issue after the controls below passed.
+- Documentation-only PR #14, workflow run `30628431839` attempt 2: the action
+  executed and passed; `changes` and the tax invariant passed, while Linux and
+  Playwright were visibly skipped by path filtering.
+- PR #22, workflow run `30635762331` attempt 2: re-running only the previously
+  failed job after enabling Dependency Graph changed it from configuration
+  failure to pass without a code or workflow change.
+- Disposable PR #23, workflow run `30637713341`: the action reported
+  `package-lock.json`, removed `@types/node@26.1.1`, added
+  `@types/node@26.1.2`, evaluated the `high` threshold and found no matching
+  vulnerability or denied package. The PR was closed without merge and its
+  branch deleted.
+- The Dependency Graph manifest inventory listed `package.json`,
+  `package-lock.json`, `frontend/package.json` and
+  `frontend/package-lock.json` as parseable manifests.
+
+The pinned action metadata states that `fail-on-severity` fails a pull request
+check when the introduced vulnerability meets or exceeds the configured
+threshold. This is configuration evidence; no deliberately vulnerable package
+was published for the negative test.
+
+Rollback does not require an application, database or dependency change. If
+the repository setting is disabled or the action again reports itself as
+unsupported, re-enable Dependency Graph and re-run the failed job. Reverting
+this documentation alone does not restore the security signal. The Node 20 to
+Node 24 action-runtime warning remains separate from R-025 and did not affect
+these results.
+
 ## Definition of done
 
 A work item is `DONE` only when:
