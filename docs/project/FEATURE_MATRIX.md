@@ -1,41 +1,48 @@
 # Feature matrix
 
-This matrix tracks product requirements, not marketing claims. A feature can be marked `DONE` only after its acceptance criteria have passed and evidence is linked.
+This matrix tracks product requirements, not marketing claims. A feature can
+be marked `DONE` only after its acceptance criteria have passed, documentation
+and evidence are linked, and the corresponding PR has been reviewed and
+merged.
 
-| ID | Capability | Current status | Target milestone | Acceptance summary |
-|---|---|---|---|---|
-| CORE-001 | Reproducible Windows development setup | `PARTIAL` | M0 | Clean PowerShell install, verification and builds pass without Bash (#18); application launch and CI review remain |
-| CORE-002 | SQLite data persistence | `UNVERIFIED` | M0 | Confirmed order survives clean restart and abrupt app restart test |
-| CORE-003 | Safe database migration path | `UNVERIFIED` | M0 | Existing-data fixture upgrades with backup and no destructive loss |
-| CORE-004 | Local-only operation | `UNVERIFIED` | M1 | Core order flow works with internet disconnected |
-| ORDER-001 | Products and categories | `UNVERIFIED` | M1 | Create, edit, search and order disposable catalogue items |
-| ORDER-002 | Modifiers and addon groups | `UNVERIFIED` | M1 | Modifier choices persist and route correctly |
-| ORDER-003 | Table management | `UNVERIFIED` | M1 | Open, update and close test tables without data loss |
-| ORDER-004 | Multiple simultaneous local clients | `UNVERIFIED` | M1 | Two clients see consistent order state on the same LAN |
-| MOBILE-001 | Waiter-friendly phone interface | `NOT_STARTED` | M2 | Ordinary phone completes table order flow without desktop controls |
-| KITCHEN-001 | KDS real-time updates | `UNVERIFIED` | M1 | Accepted items appear once at the correct station |
-| PRINT-001 | ESC/POS test printing | `UNVERIFIED` | M1 | Test receipt succeeds on simulator or supported printer |
-| PRINT-002 | Kitchen/bar routing | `UNVERIFIED` | M1 | Items route to configured destinations |
-| PRINT-003 | Persistent print queue | `UNVERIFIED` | M1 | Pending job survives restart and cannot silently disappear |
-| PRINT-004 | Duplicate-print protection | `UNVERIFIED` | M1 | Retry behaviour is explicit and logged |
-| BACKUP-001 | Local backup creation | `UNVERIFIED` | M1 | Backup created, listed and integrity-checked |
-| BACKUP-002 | Restore procedure | `UNVERIFIED` | M1 | Disposable install restores to expected state |
-| DIAG-001 | System health overview | `NOT_STARTED` | M2 | Reports server, database, disk, network, backup and printer state |
-| DIAG-002 | Guided printer troubleshooting | `NOT_STARTED` | M2 | Detects common printer failures and proposes deterministic steps |
-| DIAG-003 | Redacted diagnostic bundle | `NOT_STARTED` | M2 | Bundle excludes secrets and unnecessary customer data |
-| NET-001 | Internet-loss continuity | `NOT_STARTED` | M1 | Local service continues while internet-only features pause |
-| NET-002 | Stable local discovery/address | `NOT_STARTED` | M2 | Clients reconnect using documented local address or discovery method |
-| NET-003 | Emergency network procedure | `NOT_STARTED` | M2 | Recovery path documented and tested on supported hardware |
-| IMPORT-001 | VirtuaPOS JSON catalogue parser | `PARTIAL` | M3 | Sanitised fixture parses categories, products and prices deterministically |
-| IMPORT-002 | VirtuaPOS MDB scanner | `BLOCKED` | M3 | Requires complete installation and sanitised fixtures |
-| IMPORT-003 | Idempotent VirtuaPOS import | `NOT_STARTED` | M3 | Re-import does not create uncontrolled duplicates |
-| DOCS-001 | Public operator training | `NOT_STARTED` | M2 | Critical workflows have concise versioned instructions |
-| DOCS-002 | Offline/local help | `NOT_STARTED` | M2 | Critical help remains available without internet |
-| SUPPORT-001 | Deterministic local support engine | `NOT_STARTED` | M2 | Support actions call allow-listed procedures and are audited |
-| SUPPORT-002 | Optional natural-language interface | `OUT_OF_SCOPE` | Future | Must not be required for diagnosis or core operation |
-| FISCAL-001 | Spanish fiscal architecture | `OUT_OF_SCOPE` | M5 | Requires specialist review and formal acceptance criteria |
-| FISCAL-002 | VeriFactu capability | `OUT_OF_SCOPE` | M5 | No compliance claim before external validation |
-| BRAND-001 | Product rebranding | `OUT_OF_SCOPE` | After M0 | Preserve required attribution and third-party notices |
+M0 evidence was collected on 2026-07-30 at
+`d366538fe1a5d798d5f6c6249b365e306e38efbc` on Windows with Node `v22.20.0`
+and npm `10.9.3`. See [test results](../audit/test-results.md).
+
+| ID | Capability | Current status | Target milestone | Acceptance summary | M0 evidence / gap |
+|---|---|---|---|---|---|
+| CORE-001 | Reproducible Windows development setup | `PARTIAL` | M0 | Fresh clone installs, builds and launches using documented commands | PR #21 now contains the cross-platform Node verifier and test runner; earlier Windows install/build evidence passed without Bash, while the updated full-suite/CI run and merge remain pending. Packaged launch and physical recovery are not proved; [#18](https://github.com/joputajones/tpv-abierto/issues/18) |
+| CORE-002 | SQLite data persistence | `PARTIAL` | M0 | Confirmed order survives clean restart and abrupt app restart test | Synthetic order survived one process termination/restart; graceful and abrupt cases are not both evidenced |
+| CORE-003 | Safe database migration path | `PARTIAL` | M0 | Existing-data fixture upgrades with backup and no destructive loss | v0→v38 fixture passes; backup failure does not abort and released migrations include destructive operations; decision/fix tracked in [#16](https://github.com/joputajones/tpv-abierto/issues/16) |
+| CORE-004 | Local-only operation | `UNVERIFIED` | M1 | Core order flow works with internet disconnected | Standalone server is local, but no full Electron Internet-isolation test was run |
+| ORDER-001 | Products and categories | `PARTIAL` | M1 | Create, edit, search and order disposable catalogue items | Automated product/category/order paths pass; full acceptance workflow was not manually executed |
+| ORDER-002 | Modifiers and addon groups | `PARTIAL` | M1 | Modifier choices persist and route correctly | Addon and kitchen parsing tests pass; no physical routing evidence |
+| ORDER-003 | Table management | `PARTIAL` | M1 | Open, update and close test tables without data loss | Automated string-ID and table-move paths pass; full multi-client workflow is unverified |
+| ORDER-004 | Multiple simultaneous local clients | `UNVERIFIED` | M1 | Two clients see consistent order state on the same LAN | No two-client LAN simulation or bench test |
+| MOBILE-001 | Waiter-friendly phone interface | `UNVERIFIED` | M2 | Ordinary phone completes table order flow without desktop controls | Web routes exist; no ordinary phone evidence |
+| KITCHEN-001 | KDS real-time updates | `PARTIAL` | M1 | Accepted items appear once at the correct station | REST/WebSocket and station-routing automation pass; no secondary display bench |
+| PRINT-001 | ESC/POS test printing | `PARTIAL` | M1 | Test receipt succeeds on simulator or supported printer | Encoding/profile/API simulation passes; no supported physical printer or spooler validation |
+| PRINT-002 | Kitchen/bar routing | `PARTIAL` | M1 | Items route to configured destinations | Automated station routing passes; no physical destination test |
+| PRINT-003 | Persistent print queue | `NOT_STARTED` | M1 | Pending job survives restart and cannot silently disappear | `print_logs` is an audit history, not a persistent queued-job state machine |
+| PRINT-004 | Duplicate-print protection | `PARTIAL` | M1 | Retry behaviour is explicit and logged | Reprint logging exists; physical print and audit calls are separate and no idempotent job ID was evidenced |
+| BACKUP-001 | Local backup creation | `PARTIAL` | M1 | Backup created, listed and integrity-checked | Automated disposable tests pass; no scheduled/off-device operational proof |
+| BACKUP-002 | Restore procedure | `PARTIAL` | M1 | Disposable install restores to expected state | Automated restore passes; no second-machine or second-person drill |
+| DIAG-001 | System health overview | `NOT_STARTED` | M2 | Reports server, database, disk, network, backup and printer state | Basic API health exists but does not meet the acceptance summary |
+| DIAG-002 | Guided printer troubleshooting | `NOT_STARTED` | M2 | Detects common printer failures and proposes deterministic steps | No evidence |
+| DIAG-003 | Redacted diagnostic bundle | `NOT_STARTED` | M2 | Bundle excludes secrets and unnecessary customer data | No evidence |
+| NET-001 | Internet-loss continuity | `NOT_STARTED` | M1 | Local service continues while internet-only features pause | No controlled Internet-loss run |
+| NET-002 | Stable local discovery/address | `UNVERIFIED` | M2 | Clients reconnect using documented local address or discovery method | mDNS and port code observed; no multi-device reconnection test |
+| NET-003 | Emergency network procedure | `NOT_STARTED` | M2 | Recovery path documented and tested on supported hardware | Hardware/environment unavailable |
+| IMPORT-001 | VirtuaPOS JSON catalogue parser | `PARTIAL` | M3 | Sanitised fixture parses categories, products and prices deterministically | Initial analysis is external; no reviewed fixture or repository test evidence |
+| IMPORT-002 | VirtuaPOS MDB scanner | `BLOCKED` | M3 | Requires complete installation and sanitised fixtures | Source data unavailable; raw restaurant data must not enter this repository |
+| IMPORT-003 | Idempotent VirtuaPOS import | `NOT_STARTED` | M3 | Re-import does not create uncontrolled duplicates | No importer or test fixture |
+| DOCS-001 | Public operator training | `NOT_STARTED` | M2 | Critical workflows have concise versioned instructions | No evidence |
+| DOCS-002 | Offline/local help | `NOT_STARTED` | M2 | Critical help remains available without internet | No evidence |
+| SUPPORT-001 | Deterministic local support engine | `NOT_STARTED` | M2 | Support actions call allow-listed procedures and are audited | No evidence |
+| SUPPORT-002 | Optional natural-language interface | `OUT_OF_SCOPE` | Future | Must not be required for diagnosis or core operation | Unchanged |
+| FISCAL-001 | Spanish fiscal architecture | `OUT_OF_SCOPE` | M5 | Requires specialist review and formal acceptance criteria | No compliance claim |
+| FISCAL-002 | VeriFactu capability | `OUT_OF_SCOPE` | M5 | No compliance claim before external validation | No compliance claim |
+| BRAND-001 | Product rebranding | `OUT_OF_SCOPE` | After M0 | Preserve required attribution and third-party notices | MIT attribution and FloCafe identity are unchanged |
 
 ## Maintenance rule
 

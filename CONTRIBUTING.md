@@ -11,18 +11,39 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ## Development Setup
 
 ```bash
-# Clone the repo
-git clone https://github.com/FreeOpenSourcePOS/FloCafe.git
-cd FloCafe
+# Clone the maintained fork
+git clone https://github.com/joputajones/tpv-abierto.git
+cd tpv-abierto
 
 # Install dependencies (rebuilds native modules)
-npm install
+npm ci
 
 # Start development
 npm run dev
 ```
 
-This launches both the Next.js dev server (port 3002) and the Electron app (port 3001 API).
+This builds the Next.js static export, serves it with the embedded Express API
+on port 3001, starts the standalone KDS server on port 3002, and launches
+Electron. For the browser-only Next.js development server (port 3000 by
+default), use `npm run dev:frontend`.
+
+### Windows native-build prerequisites
+
+The root install rebuilds native modules, including `better-sqlite3`. On
+Windows, use a completed Visual Studio Build Tools installation with the
+**Desktop development with C++** workload (or equivalent MSVC x86/x64 tools)
+and a usable Windows 10 or Windows 11 SDK. Merely having `cl.exe` or setting
+`GYP_MSVS_VERSION` is not sufficient when the SDK headers and libraries are
+absent.
+
+After installing or repairing those components through Visual Studio Installer,
+open a Developer PowerShell or Developer Command Prompt and verify:
+
+```powershell
+& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
+where.exe cl
+where.exe msbuild
+```
 
 ### Windows installation and validation
 
@@ -48,9 +69,10 @@ The test aggregator preserves the established order, treats exit code 77 as
 an ABI-mismatch skip, and stops on the first real failure. The Windows
 portability evidence is tracked in
 [`joputajones/tpv-abierto#18`](https://github.com/joputajones/tpv-abierto/issues/18).
-The independent `test:reports-insights` regression is tracked in
-[`#20`](https://github.com/joputajones/tpv-abierto/issues/20); that functional
-failure is not an installation or Bash failure.
+The independent `test:reports-insights` regression was resolved in
+[`#20`](https://github.com/joputajones/tpv-abierto/issues/20). POSIX scripts
+used only by macOS or release maintenance remain valid, but they are not part
+of the mandatory Windows installation or root test path.
 
 ### macOS Gatekeeper & the Electron dev binary
 
