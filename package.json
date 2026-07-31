@@ -81,6 +81,7 @@
     "test:held-orders": "node tests/run-electron-node-test.cjs tests/held-orders.test.ts",
     "test:product-images": "node tests/run-electron-node-test.cjs tests/product-images.test.ts",
     "test:schema-health": "node tests/run-electron-node-test.cjs tests/schema-health.test.ts",
+    "test:migration-backup-fail-closed": "node tests/run-electron-node-test.cjs tests/pre-migration-backup-fail-closed.test.ts",
     "test:upgrade-path": "node tests/run-electron-node-test.cjs tests/upgrade-path.test.ts",
     "test:upgrade-regression": "npm run test:upgrade-path",
     "test:master-pin": "node tests/run-electron-node-test.cjs tests/master-pin.test.ts",

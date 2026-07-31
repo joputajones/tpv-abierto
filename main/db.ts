@@ -5,6 +5,12 @@ import * as fs from 'fs';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { BUNDLED_COUNTRY_PACKS, bundledPackVersionId } from './tax-packs/bundled';
+import {
+  createVerifiedPreMigrationBackup,
+  type PreMigrationBackupDependencies,
+} from './pre-migration-backup';
+
+export { PreMigrationBackupError } from './pre-migration-backup';
 
 let db: Database.Database;
 let dbHealthError: string | null = null;
@@ -65,29 +71,45 @@ function getBackupDir(): string {
   return path.join(userDataPath, 'backups');
 }
 
-export function initDatabase(): void {
-  const dbPath = getDbPath();
-  const backupDir = getBackupDir();
+export interface InitDatabaseOptions {
+  preMigrationBackup?: Partial<PreMigrationBackupDependencies>;
+}
 
-  if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true });
-  }
+export function initDatabase(options: InitDatabaseOptions = {}): void {
+  const dbPath = getDbPath();
+  const databaseExistedBeforeOpen = fs.existsSync(dbPath);
+  let openedDb: Database.Database | undefined;
 
   console.log(`[DB] Opening database at: ${dbPath}`);
-  db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('busy_timeout = 5000');
-  db.pragma('foreign_keys = OFF'); // Off during migrations
+  dbHealthError = null;
+  try {
+    openedDb = new Database(dbPath);
+    db = openedDb;
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('busy_timeout = 5000');
+    db.pragma('foreign_keys = OFF'); // Off during migrations
 
-  runMigrations();
+    runMigrations(databaseExistedBeforeOpen, options.preMigrationBackup);
 
-  db.pragma('foreign_keys = ON');
+    db.pragma('foreign_keys = ON');
 
-  runStartupIntegrityCheck();
-  repairSequences();
-  autoRepairPaymentDetails();
-  autoRepairDefaultPrinter();
+    runStartupIntegrityCheck();
+    repairSequences();
+    autoRepairPaymentDetails();
+    autoRepairDefaultPrinter();
+  } catch (error) {
+    if (openedDb) {
+      try {
+        openedDb.close();
+      } catch {
+        console.error('[DB] Failed to close database after initialization error');
+      }
+    }
+    if (db === openedDb) db = null as unknown as Database.Database;
+    dbHealthError = null;
+    throw error;
+  }
 }
 
 export function ensureCloudIdentity(): { posHash: string; deviceSecret: string } {
@@ -344,9 +366,10 @@ export function getDatabase(): Database.Database {
 }
 
 export function closeDatabase(): void {
-  if (db) {
-    db.close();
-    db = null as unknown as Database.Database;
+  const openDb = db;
+  db = null as unknown as Database.Database;
+  if (openDb) {
+    openDb.close();
     console.log('[DB] Database closed');
   }
 }
@@ -418,7 +441,7 @@ function readBackupSchemaVersion(fullPath: string): number | null {
 
 /**
  * Lists backups in the managed backups/ directory, newest first. Only
- * backups written by createBackup()/syncBackupBeforeMigration() live here —
+ * backups written by createBackup()/createVerifiedPreMigrationBackup() live here —
  * a backup saved to a user-chosen custom path (via the Export Backup /
  * "choose location" flow) intentionally does not appear here, same as it
  * never has for the existing File > Export Backup menu action. See #120.
@@ -646,7 +669,7 @@ export function buildIdealSchemaDb(): Database.Database {
   const previousDb = db;
   db = idealDb;
   try {
-    runMigrations();
+    runMigrations(false);
   } finally {
     db = previousDb;
   }
@@ -1460,38 +1483,6 @@ export const MIGRATIONS: { version: number; name: string; up: () => void }[] = [
   },
 ];
 
-function syncBackupBeforeMigration(fromVersion: number, toVersion: number): void {
-  try {
-    const dbPath = getDbPath();
-    const backupDir = getBackupDir();
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-    }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const targetPath = path.join(backupDir, `flo-backup-${timestamp}-pre-v${fromVersion}-to-v${toVersion}.db`);
-
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    fs.copyFileSync(dbPath, targetPath);
-
-    const backupDb = new Database(targetPath);
-    backupDb.pragma('journal_mode = DELETE');
-    backupDb.exec(`
-      CREATE TABLE IF NOT EXISTS _flo_meta (
-        key TEXT PRIMARY KEY,
-        value TEXT
-      )
-    `);
-    backupDb.prepare(`INSERT OR REPLACE INTO _flo_meta (key, value) VALUES (?, ?)`).run('schema_version', String(getCurrentSchemaVersion()));
-    backupDb.prepare(`INSERT OR REPLACE INTO _flo_meta (key, value) VALUES (?, ?)`).run('backup_created_at', new Date().toISOString());
-    backupDb.prepare(`INSERT OR REPLACE INTO _flo_meta (key, value) VALUES (?, ?)`).run('app_version', app.getVersion());
-    backupDb.close();
-
-    console.log(`[DB] Auto-backup before migrating v${fromVersion} → v${toVersion} created at ${targetPath}`);
-  } catch (err: any) {
-    console.error(`[DB] Auto-backup before migration failed:`, err.message);
-  }
-}
-
 export class SchemaVersionMismatchError extends Error {
   constructor(public readonly dbVersion: number, public readonly appVersion: number) {
     super(
@@ -1503,7 +1494,10 @@ export class SchemaVersionMismatchError extends Error {
   }
 }
 
-function runMigrations(): void {
+function runMigrations(
+  databaseExistedBeforeOpen: boolean,
+  preMigrationBackupDependencies?: Partial<PreMigrationBackupDependencies>,
+): void {
   const current = getCurrentSchemaVersion();
   const target = MIGRATIONS.length > 0 ? MIGRATIONS[MIGRATIONS.length - 1].version : 0;
 
@@ -1529,14 +1523,24 @@ function runMigrations(): void {
   // a dozen+ migrations in a single run; every one of them deserves the same
   // protection, not just the couple we happened to remember to flag by number.
   //
-  // Deliberately unconditional, including current === 0: that's NOT a
-  // reliable signal for "nothing to protect" — real old installs can report
-  // user_version 0 if they predate this app's version-tracking pragma (see
-  // tests/fixtures/upgrade-snapshots/pre-migration-scheme-v1.5.0.db), and
-  // those are exactly the installs with the most pending migrations and the
-  // most at stake. A brand-new install just backs up an empty/tiny file.
-  console.log(`[DB] Triggering auto-backup before migrating v${current} → v${target}...`);
-  syncBackupBeforeMigration(current, target);
+  // Existing files always require a verified backup before the first pending
+  // migration, including user_version 0 and apparently empty files. The only
+  // safe fresh-install signal is that the file did not exist before opening.
+  if (databaseExistedBeforeOpen) {
+    console.log(`[DB] Verifying required backup before migrating v${current} → v${target}...`);
+    const backup = createVerifiedPreMigrationBackup({
+      sourceDb: db,
+      sourcePath: getDbPath(),
+      backupDir: getBackupDir(),
+      fromVersion: current,
+      targetVersion: target,
+      appVersion: app.getVersion(),
+      dependencies: preMigrationBackupDependencies,
+    });
+    console.log(`[DB] Required pre-migration backup verified (schema v${backup.schemaVersion})`);
+  } else {
+    console.log('[DB] New database file detected; no pre-migration backup is required');
+  }
 
   for (const migration of MIGRATIONS) {
     if (migration.version <= current) continue;

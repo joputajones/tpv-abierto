@@ -12,7 +12,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Riesgo técnico | ID oficial | Estado de mitigación | Evidencia / limitación |
 | --- | --- | --- | --- |
 | Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
-| Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
+| Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | El fallo fail-open histórico se reprodujo; la rama de PR valida el bloqueo y la copia verificada, pendiente de merge |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
 | Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y suite repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-005/R-011 |
@@ -57,24 +57,25 @@ envío y lectura remota, y actualizar documentación/consentimiento.
 
 ## P0 — Migración continúa sin copia previa
 
-**Hecho observado:** `syncBackupBeforeMigration()` captura cualquier error,
-escribe un log y retorna; `runMigrations()` continúa. Las migraciones históricas
-v10, v14 y v30 incluyen `DROP TABLE`, borrado de settings y `DROP COLUMN`.
+**Hecho observado:** el camino histórico capturaba cualquier error de copia,
+escribía un log y continuaba; la reproducción real alcanzó v38 después de un
+fallo de destino. La rama de #16 añade una barrera verificada y fail-closed
+antes del lote. Las migraciones históricas v10, v14 y v30 incluyen `DROP TABLE`,
+borrado de settings y `DROP COLUMN` y permanecen sin cambios.
 
 **Por qué importa:** disco lleno, permisos, antivirus o fallo de checkpoint
 pueden dejar al usuario sin copia justo antes de transformar datos. La suite
 prueba la ruta feliz, no el fallo de copia. El comportamiento contradice la
 expectativa de seguridad del README.
 
-**Acción recomendada:** hacer que el backup previo sea fail-closed para una base
-existente, verificar legibilidad/integridad de la copia, probar disco lleno y
-permisos, y ensayar una base representativa y saneada desde cada versión
-relevante. No editar migraciones ya publicadas; añadir protección alrededor del
-lote. Una base nueva y vacía puede estudiarse como excepción únicamente si la
-condición es explícita y determinista; no debe inferirse por tamaño de archivo
-ni por una heurística probabilística. La decisión humana pendiente y sus
-criterios están en el
-[issue #16](https://github.com/joputajones/tpv-abierto/issues/16).
+**Acción en validación:** la rama de PR clasifica una base nueva solo si el
+archivo no existía antes de abrirlo; todo archivo existente, incluido v0,
+requiere checkpoint completo y copia verificada antes de la primera migración.
+Las pruebas cubren destino, copia, integridad, versión, finalización, fuente
+intacta y reintento v0→v38. #16 permanece abierto y R-005 `PARTIAL` hasta el
+merge. Aun después, harán falta fixtures saneadas de otras versiones y un
+simulacro operativo externo; véase
+[ADR-003](../project/decisions/ADR-003-pre-migration-backup-fail-closed.md).
 
 ## P1 — API LAN sin cifrado y sandbox reducido
 
