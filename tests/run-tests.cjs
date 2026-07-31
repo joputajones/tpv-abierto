@@ -16,6 +16,7 @@ const TEST_SCRIPTS = Object.freeze([
   'test:customer-auth',
   'test:customer-pagination',
   'test:backup',
+  'test:off-device-restore',
   'test:printer',
   'test:translations',
   'test:phone',

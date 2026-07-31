@@ -53,7 +53,7 @@ async function main() {
   assert.deepEqual(calls, ['first', 'skip', 'failure']);
   assert.deepEqual(aggregateResult, { code: 5, signal: null, failedScript: 'failure' });
 
-  assert.equal(TEST_SCRIPTS.length, 67);
+  assert.equal(TEST_SCRIPTS.length, 68);
   assert.equal(TEST_SCRIPTS[0], 'test:smoke');
   assert.equal(TEST_SCRIPTS.at(-2), 'test:dev-tooling');
   assert.equal(TEST_SCRIPTS.at(-1), 'test:cross-platform-scripts');
