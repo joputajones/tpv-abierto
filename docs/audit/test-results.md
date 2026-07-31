@@ -47,6 +47,45 @@ La CI de PR #21 también pasó `changes`, invariante fiscal,
 temporal hizo fallar el último test: el runner identificó el script, devolvió 1
 y se detuvo. El parche se revirtió completamente antes del push.
 
+### Validación de la corrección fail-closed de #16 antes del merge
+
+PowerShell normal, sin Bash (`where.exe bash` devolvió 1). La reproducción roja
+usó la fixture sintética v0 y bloqueó el destino administrado de copias: el
+código histórico registró el fallo, aplicó v1→v38 y el test terminó con código 1
+indicando que la migración había alcanzado v38. No se publicó ese estado rojo.
+
+La corrección ejerce el camino real `initDatabase()` y clasifica una instalación
+nueva solo por ausencia previa de `flo.db`. Una base existente con migraciones
+pendientes debe completar checkpoint, copia parcial exclusiva, journal
+autocontenido, sello de versión, integridad, reapertura en solo lectura y
+publicación atómica antes de la primera migración.
+
+| Comando | Código | Duración | Resultado |
+| --- | ---: | ---: | --- |
+| `where.exe bash` | 1 | — | Bash ausente, como se esperaba |
+| `npm.cmd ci` | 0 | 35,2 s | 648 paquetes; rebuild de `better-sqlite3` y verificador Electron correctos; 1 advisory moderada raíz |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 | 1,8 s | Checkpoint ocupado, destino, copia, apertura, integridad, versión y finalización bloquean antes de v1; fuente intacta; archivo cero bytes protegido; backup válido y reintento aislado |
+| `npm.cmd run test:upgrade-path` | 0 | 1,8 s | Fixture existente v0, backup verificado, v0→v38, conservación, paridad e idempotencia |
+| `npm.cmd run test:backup` | 0 | 1,0 s | 10/10 del flujo histórico de backup/restore |
+| `npm.cmd run test:schema-health` | 0 | 1,4 s | Salud, deriva y reparaciones seguras correctas |
+| `npm.cmd run test:cross-platform-scripts` | 0 | 0,8 s | Agregador actualizado a 66 scripts |
+| `npm.cmd run lint` | 0 | 26,9 s | 0 errores; 676 avisos backend preexistentes; frontend limpio |
+| `npm.cmd run build` | 0 | 13,6 s | TypeScript y assets correctos |
+| `npm.cmd run build:frontend` | 0 | 51,8 s | 22 rutas; el audit ejecutado por este `npm ci` informó 0 vulnerabilidades frontend |
+| `npm.cmd test` | 0 | 134,8 s | Los 66 scripts terminaron; 9.524 líneas capturadas |
+
+El error público afirma que no se aplicó ninguna migración y ofrece acciones de
+espacio, permisos, instancias concurrentes, reintento y soporte. No incluye la
+causa interna, rutas ni datos. La telemetría específica contiene únicamente
+tipo, etapa y versiones de esquema. El bloque completo de `MIGRATIONS` coincide
+exactamente con `origin/main`: ambos producen SHA-256
+`72089018fab7776ec460a9e4e51cdd325e83dc5c749180901217c53f122b8c09` sobre
+30.506 caracteres normalizados.
+
+Esta evidencia demuestra que una copia sintética puede reutilizarse en otro
+directorio temporal para reintentar v0→v38. No demuestra restauración externa,
+pérdida total del equipo, hardware distinto ni recuperación durante servicio.
+
 ### Validación histórica posterior a la reparación administrativa
 
 Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
@@ -296,8 +335,8 @@ La instalación también avisó:
 
 ## Pruebas
 
-El repositorio contiene 76 archivos `*.test.*` bajo `tests/` y dos specs
-Playwright bajo `frontend/`. `package.json` define 72 scripts de prueba,
+El repositorio contiene 78 archivos `*.test.*` bajo `tests/` y dos specs
+Playwright bajo `frontend/`. `package.json` define 74 scripts de prueba,
 incluido el agregador `npm test`.
 
 La repetición histórica de la suite pasó al exponer Git Bash temporalmente en

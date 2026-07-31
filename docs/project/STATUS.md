@@ -33,6 +33,11 @@ and restart through the recommended standalone development server, but a
 graceful Electron shutdown and abrupt-power-loss cycle have not both been
 demonstrated.
 
+The #16 branch reproduces the historical fail-open migration path and validates
+a verified fail-closed barrier for every pre-existing database file, including
+`user_version = 0`. Its 66-script Windows suite passes without Bash, but #16 and
+R-005 remain open/`PARTIAL` until the correction is merged.
+
 These results improve confidence in the code baseline; they do not establish
 production readiness, Spanish fiscal compliance or suitability for a real
 restaurant.
@@ -52,7 +57,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
 | Baseline test suite | `DONE` | Integrated `main` passes all 65 scripts without Bash; fail-fast propagation was proved with a reverted synthetic failure and Linux CI passed |
-| Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
+| Upgrade-path test | `PARTIAL` | PR branch validates fail-closed checkpoint/copy/integrity/version/finalization failures plus v0→v38, preservation, parity, idempotency and isolated retry; #16 remains open until merge |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
 | Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit; standalone backend restart was repeated, but no packaged Windows build was tested |
@@ -60,7 +65,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | Automated disposable backup/restore and migration backup paths pass; no off-device restore drill or second-person procedure |
+| Backup and restore validation | `PARTIAL` | PR branch creates and reopens a verified local premigration copy and retries the synthetic upgrade independently; no off-device restore drill or second-person procedure |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
@@ -100,11 +105,10 @@ close those gaps or validate physical restaurant operation.
 
 ## Immediate next actions
 
-1. Resolve the fail-closed decision in
-   [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
-   existing databases before migration without editing released migrations. A
-   new empty database may be considered only through an explicit, deterministic
-   condition, never file size or a probabilistic heuristic.
+1. Review and merge the fail-closed implementation tracked in
+   [#16](https://github.com/joputajones/tpv-abierto/issues/16). The PR branch
+   classifies a new database only by prior file absence and protects existing
+   databases without editing released migrations.
 2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 3. Run the M1 bench gate with representative printer hardware, two local
@@ -112,8 +116,8 @@ close those gaps or validate physical restaurant operation.
 
 ## Blockers
 
-- Premigration backup failure is not fail-closed for an existing database
-  (issue #16).
+- The fail-closed premigration correction is locally validated but not yet
+  merged; issue #16 remains open.
 - Dependency review is operational, but no branch protection or ruleset enforces
   it; a red check remains a manual governance blocker.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a

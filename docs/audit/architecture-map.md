@@ -166,16 +166,21 @@ El esquema usa `PRAGMA user_version` y contiene 38 migraciones. Cada migración
 pendiente se ejecuta dentro de su propia transacción y actualiza `user_version`.
 Una base más nueva que el binario provoca un fallo explícito.
 
-Antes de un lote pendiente se hace checkpoint WAL y se intenta copiar la base.
-El fallo de esa copia se captura y solo se registra; el bucle de migración
-continúa. Aunque la norma actual exige migraciones aditivas, el historial
-contiene:
+Históricamente, antes de un lote pendiente se hacía checkpoint WAL y se
+intentaba copiar la base, pero el fallo solo se registraba y el bucle
+continuaba. La corrección de #16 en la rama de PR clasifica la base antes de
+abrirla y, para todo archivo existente con migraciones pendientes, exige
+checkpoint completo, copia parcial exclusiva, sello de versión, integridad,
+reapertura en solo lectura y publicación atómica antes de v1. #16 y R-005
+siguen abiertos hasta el merge. Aunque la norma actual exige migraciones
+aditivas, el historial contiene:
 
 - v10: `DROP TABLE IF EXISTS sequences` y recreación.
 - v14: borrado de settings y `DROP COLUMN customers.loyalty_points`.
 - v30: backfill condicionado y `DROP COLUMN order_items.addons`.
 
-No se han alterado estas migraciones durante la auditoría.
+No se han alterado estas migraciones durante la auditoría ni en la corrección
+fail-closed.
 
 ## Impresión
 
