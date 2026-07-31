@@ -19,22 +19,22 @@ canónica incorporada por el PR #13. El 2026-07-31 se incorporó de nuevo
 | Main integrado inicialmente | `080e9c636663d8052567db3ab68d8d40ad483fff` |
 | Main integrado tras PR #24 | `38abca3f0d149c6d245adc0a19705c828b1d70aa` |
 | Main integrado tras PR #21 | `a51fa541604925762c759cd6ad1c98514cf61de6` |
+| Main integrado tras PR #28 | `6d6f1d3d32bc8a954becc2bfae3af7ca314175f7` |
 | Fuente oficial de seguimiento | `docs/project/` |
 
 ### Estado de gobierno para revisión
 
 La reconciliación de [PR #14](https://github.com/joputajones/tpv-abierto/pull/14)
 está fusionada y #15 se cerró con la decisión explícita de mantener M0
-`IN_PROGRESS`. PR #21 y PR #22 también están fusionadas; #18, #19 y #20 están
-cerrados. #16 continúa abierto y las validaciones físicas/operativas siguen
-pendientes.
+`IN_PROGRESS`. PR #21, PR #22 y PR #28 también están fusionadas; #16, #18, #19
+y #20 están cerrados. Las validaciones físicas/operativas siguen pendientes.
 
 La trazabilidad se distribuye así:
 
 - [#15](https://github.com/joputajones/tpv-abierto/issues/15): gobierno y salida
   de M0;
 - [#16](https://github.com/joputajones/tpv-abierto/issues/16): migración
-  fail-closed, R-005;
+  fail-closed, R-005, cerrada por PR #28;
 - [#17](https://github.com/joputajones/tpv-abierto/issues/17): protección de
   datos públicos, R-006;
 - [#18](https://github.com/joputajones/tpv-abierto/issues/18): instalación y
@@ -67,7 +67,7 @@ están en [resultados de pruebas](test-results.md).
   Node multiplataforma y está fusionada en `a51fa54`.
 - **Estado actual en `main`:** #18 está cerrado y R-022 `DONE` para portabilidad
   de desarrollo. Instalación, rebuild, verificación, builds, upgrade fixture y
-  los 65 scripts se repitieron en PowerShell sin Bash desde `main`.
+  los 66 scripts se repitieron en PowerShell sin Bash desde `main`.
 - **Limitación restante:** no demuestra restauración en otro equipo, copia
   externa, pérdida total, hardware, LAN hostil ni recuperación durante servicio.
 
@@ -100,13 +100,15 @@ están en [resultados de pruebas](test-results.md).
 - **Evidencia y límites:** el test pasa 31/31 y la suite completa fue repetida
   desde `main` en Windows sin Bash y en Linux CI; no cambia producción.
 
-#### #16 — decisión de migración aún pendiente
+#### #16 — copia premigración fail-closed integrada
 
-Una base existente no debe migrarse si no puede crearse y verificarse su copia
-previa; el fallo debe detener el proceso antes de modificar datos. Puede
-estudiarse una excepción para una base nueva y vacía, pero esa condición debe
-ser explícita y determinista, nunca inferida por tamaño de archivo ni mediante
-una heurística probabilística. Esta tarea no implementa la decisión.
+PR #28 clasifica una instalación nueva únicamente por ausencia previa del
+archivo. Todo archivo existente con migraciones pendientes, incluido v0 o cero
+bytes, requiere checkpoint completo y copia verificada antes de v1. Los fallos
+de destino, copia, apertura, integridad, versión y finalización conservan la
+fuente; la copia válida se reabre en solo lectura y permite reintentar el upgrade
+sintético v0→v38 en otro directorio temporal. #16 está cerrado y R-005 `DONE`
+para este alcance. No se infiere recuperación externa o de desastre.
 
 No existe `specs/` en este checkout. Las referencias a especificaciones
 privadas siguen siendo externas y no se han conectado al repositorio, al build
@@ -120,13 +122,13 @@ ni al runtime.
 | Electron real es 43.2.0 | Confirmado mediante prueba ejecutada | `package.json` declara `^43.2.0`, ambos lockfiles se parsean y `electron.exe --version` devuelve `v43.2.0` | No se construyó un instalador |
 | API y KDS escuchan en todas las interfaces en 3001/3002 | Confirmado mediante prueba ejecutada | `node dev-server.js`, listeners `0.0.0.0:3001` y `0.0.0.0:3002`, salud y HTML 200 | No se ensayó una LAN hostil ni TLS |
 | Flags cloud de pedidos/informes no protegen todos los caminos de datos | Confirmado mediante código | `recordOrderChanged()`, `runCommand()` y `decorateOrder()` no aplican ambos flags; la instantánea incluye cliente/factura/pago | No se registró una cuenta cloud ni tráfico real |
-| Una migración puede continuar si falla la copia previa | Confirmado mediante prueba ejecutada | La suite provoca `Auto-backup before migration failed` y continúa; v10/v14/v30 contienen operaciones destructivas históricas | La fixture feliz v0→v38 sí conserva los datos cubiertos |
+| Una migración puede continuar si falla la copia previa | Corregido y confirmado mediante prueba ejecutada | La reproducción histórica alcanzó v38 tras fallar la copia; PR #28 bloquea antes de v1, mantiene fuente/version intactas y conserva v10/v14/v30 sin cambios | Evidencia sintética; recuperación externa permanece bajo R-011 |
 | La instalación raíz es reproducible en el Windows auditado | Confirmado mediante prueba ejecutada | Tras reparar SDK/MSVC, PR #21 elimina Bash; `npm.cmd ci`, rebuild y verificador pasan desde `main` | Desarrollo reproducible en el entorno auditado; no prueba empaquetado ni recuperación externa |
-| La suite se ejecuta con el comando literal documentado | Confirmado mediante prueba ejecutada | PR #21 y PR #22 están fusionadas; `npm.cmd test` ejecuta 65 scripts sin Bash y termina en 0 | Sin métrica de cobertura; errores negativos esperados generan salida ruidosa |
+| La suite se ejecuta con el comando literal documentado | Confirmado mediante prueba ejecutada | PR #21, PR #22 y PR #28 están fusionadas; `npm.cmd test` ejecuta 66 scripts sin Bash y termina en 0 | Sin métrica de cobertura; errores negativos esperados generan salida ruidosa |
 | Builds y suite automatizada son funcionales en el árbol disponible | Confirmado mediante prueba ejecutada | TypeScript, export de 22 rutas, v0→v38 y suite pasan tras instalación limpia; Linux y Playwright verdes | No hay build de instalador ni validación de hardware |
 | Un pedido persiste tras reiniciar el backend | Confirmado parcialmente | Pedido sintético creado por API, proceso detenido, servidor reiniciado, login y lectura del mismo pedido correctos | El cierre no dejó evidencia de apagado graceful; no se probó corte eléctrico |
 | Impresión está lista para hardware de restaurante | Bloqueado por hardware o información externa | Tests de bytes/perfiles/API simulada pasan | Sin impresora, spooler, cajón, papel, USB/TCP ni cola persistente |
-| Copia y restauración están listas para desastre real | Confirmado parcialmente | Tests desechables y copia premigración feliz pasan | Sin copia fuera del equipo, retención local automática ni simulacro en otra máquina |
+| Copia y restauración están listas para desastre real | Confirmado parcialmente | Tests desechables y copia premigración fail-closed, verificada y reutilizable pasan | Sin copia fuera del equipo, retención local automática ni simulacro en otra máquina |
 | Telemetría es siempre opt-in antes de arrancar | Contradicho por la evidencia | Defaults nuevos `true` y `telemetry.start()` anterior al wizard; migrados reciben defaults distintos | No se capturó una petición HTTPS real |
 | El fallback de puerto principal es coherente | Confirmado mediante código | El servidor mantiene puerto activo, pero ventana/mDNS/menú siguen usando `PORT`; KDS sí expone el activo | No se ocupó 3001 durante esta repetición |
 | El actualizador del fork usa releases del fork | Contradicho por la evidencia | Configuración de publicación/actualización apunta a `FreeOpenSourcePOS/FloCafe`; Windows directo no está firmado | No se construyó ni ejecutó el actualizador empaquetado |

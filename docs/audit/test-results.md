@@ -86,6 +86,27 @@ Esta evidencia demuestra que una copia sintética puede reutilizarse en otro
 directorio temporal para reintentar v0→v38. No demuestra restauración externa,
 pérdida total del equipo, hardware distinto ni recuperación durante servicio.
 
+### Validación integrada posterior a PR #28
+
+PR #28 se fusionó en `6d6f1d3d32bc8a954becc2bfae3af7ca314175f7`
+y #16 se cerró. Desde ese `main`, PowerShell siguió sin encontrar Bash y se
+repitió el camino integrado:
+
+| Comando | Código | Duración | Resultado |
+| --- | ---: | ---: | --- |
+| `npm.cmd ci` | 0 | 32,1 s | 648 paquetes, rebuild nativo y Electron correctos; 1 advisory moderada raíz |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 | 4,6 s | Todos los fallos y caminos positivos pasan desde `main` |
+| `npm.cmd run test:upgrade-path` | 0 | 1,6 s | Backup verificado y v0→v38 integrado |
+| `npm.cmd run test:backup` | 0 | 1,2 s | 10/10 |
+| `npm.cmd run build` | 0 | 12,9 s | TypeScript y assets correctos |
+| `npm.cmd run build:frontend` | 0 | 50,3 s | 22 rutas estáticas |
+| `npm.cmd test` | 0 | 154,8 s | Los 66 scripts terminaron; 9.524 líneas capturadas |
+
+La CI de PR #28 pasó `changes`, invariante fiscal, `dependency-review`,
+`linux-baseline` y `e2e-playwright`. R-005 queda `DONE` únicamente para la
+barrera premigración local; M0 continúa `IN_PROGRESS` y la recuperación externa
+o ante pérdida total sigue fuera de esta evidencia.
+
 ### Validación histórica posterior a la reparación administrativa
 
 Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
@@ -260,7 +281,7 @@ Esta repetición no sustituye la evidencia original que se conserva debajo.
 | `npx.cmd electron-builder install-app-deps` | Fallo | El rebuild nativo vuelve a requerir un Windows SDK | El prebuild N-API incluido sí cargó en Node 22 y Electron 43, pero el gate de instalación sigue fallando |
 | `npm.cmd test` | Fallo inmediato | `"bash" no se reconoce` | No se ejecuta ninguna prueba con el comando literal |
 | `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | Correcto | La cadena completa alcanzó `test:url-allowlist`; 8.324 líneas stdout y 129 stderr | Workaround de entorno; stderr incluye errores esperados de pruebas negativas |
-| `npm.cmd run test:upgrade-path` | Correcto | v0→v38, copia, integridad, FK, conservación, paridad de esquema e idempotencia | No valida todas las bases reales ni hace fail-closed la copia |
+| `npm.cmd run test:upgrade-path` | Correcto | v0→v38, copia, integridad, FK, conservación, paridad de esquema e idempotencia | Evidencia histórica: entonces no validaba el fallo de copia; PR #28 lo resuelve en el camino integrado |
 | `npm.cmd run build` | Correcto | TypeScript y copia de assets terminaron con código 0 | No empaqueta Electron |
 | `npm.cmd run build:frontend` | Correcto con avisos | Next 16.2.12, 22 rutas estáticas; 9 vulnerabilidades altas de tooling | No es Playwright ni valida navegadores/dispositivos |
 | `node dev-server.js` | Correcto parcialmente | Un proceso Node abrió `0.0.0.0:3001` y `:3002`; API, DB, POS y KDS respondieron 200 | No arranca telemetría, updater, mDNS, Google/WhatsApp ni la ventana Electron |

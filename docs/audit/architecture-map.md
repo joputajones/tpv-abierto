@@ -168,12 +168,12 @@ Una base más nueva que el binario provoca un fallo explícito.
 
 Históricamente, antes de un lote pendiente se hacía checkpoint WAL y se
 intentaba copiar la base, pero el fallo solo se registraba y el bucle
-continuaba. La corrección de #16 en la rama de PR clasifica la base antes de
-abrirla y, para todo archivo existente con migraciones pendientes, exige
-checkpoint completo, copia parcial exclusiva, sello de versión, integridad,
-reapertura en solo lectura y publicación atómica antes de v1. #16 y R-005
-siguen abiertos hasta el merge. Aunque la norma actual exige migraciones
-aditivas, el historial contiene:
+continuaba. PR #28, integrada en `6d6f1d3`, clasifica la base antes de abrirla
+y, para todo archivo existente con migraciones pendientes, exige checkpoint
+completo, copia parcial exclusiva, sello de versión, integridad, reapertura en
+solo lectura y publicación atómica antes de v1. #16 está cerrado y R-005
+`DONE` para este alcance. Aunque la norma actual exige migraciones aditivas, el
+historial contiene:
 
 - v10: `DROP TABLE IF EXISTS sequences` y recreación.
 - v14: borrado de settings y `DROP COLUMN customers.loyalty_points`.
