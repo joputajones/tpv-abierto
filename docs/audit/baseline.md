@@ -18,15 +18,16 @@ canónica incorporada por el PR #13. El 2026-07-31 se incorporó de nuevo
 | Rama | `audit/m0-reconcile` |
 | Main integrado inicialmente | `080e9c636663d8052567db3ab68d8d40ad483fff` |
 | Main integrado tras PR #24 | `38abca3f0d149c6d245adc0a19705c828b1d70aa` |
+| Main integrado tras PR #21 | `a51fa541604925762c759cd6ad1c98514cf61de6` |
 | Fuente oficial de seguimiento | `docs/project/` |
 
 ### Estado de gobierno para revisión
 
-La reconciliación se prepara en la
-[PR #14](https://github.com/joputajones/tpv-abierto/pull/14), que permanece
-abierta y sin fusionar. M0 sigue `IN_PROGRESS`: la evidencia dependiente de
-esta PR es `PARTIAL` hasta su revisión y merge; las soluciones de #18 y #20
-existen únicamente en PRs pendientes, y #16 continúa abierto.
+La reconciliación de [PR #14](https://github.com/joputajones/tpv-abierto/pull/14)
+está fusionada y #15 se cerró con la decisión explícita de mantener M0
+`IN_PROGRESS`. PR #21 y PR #22 también están fusionadas; #18, #19 y #20 están
+cerrados. #16 continúa abierto y las validaciones físicas/operativas siguen
+pendientes.
 
 La trazabilidad se distribuye así:
 
@@ -41,7 +42,7 @@ La trazabilidad se distribuye así:
 - [#19](https://github.com/joputajones/tpv-abierto/issues/19): señal de
   dependency review en CI, R-025, cerrado por la PR #24;
 - [#20](https://github.com/joputajones/tpv-abierto/issues/20): fixture temporal
-  no determinista de reports insights, con solución pendiente en PR #22.
+  no determinista de reports insights, cerrada por la PR #22.
 
 El primer workflow observado en la PR quedó rojo por configuración antes de
 evaluar dependencias. Después se habilitó Dependency Graph y la misma acción
@@ -62,13 +63,13 @@ están en [resultados de pruebas](test-results.md).
   pasó y apareció el fallo posterior por la dependencia implícita de Bash.
 - **Causa raíz:** `postinstall`/`verify:electron` y el agregador raíz invocaban
   scripts Bash que no estaban en el `PATH` normal de PowerShell.
-- **Corrección disponible:** PR #21 sustituye las rutas obligatorias por scripts
-  Node multiplataforma; demuestra `npm ci` y `verify:electron` sin Bash en
-  Windows y valida el runner en Windows y Linux.
-- **Estado actual en `main`:** #18 sigue abierto y la rama principal aún depende
-  de Bash. La mitigación es `PARTIAL` hasta revisar y fusionar PR #21.
-- **Limitación restante:** después del merge deberá repetirse una instalación
-  limpia desde el `main` actualizado; la evidencia de PR no es aceptación final.
+- **Corrección integrada:** PR #21 sustituye las rutas obligatorias por scripts
+  Node multiplataforma y está fusionada en `a51fa54`.
+- **Estado actual en `main`:** #18 está cerrado y R-022 `DONE` para portabilidad
+  de desarrollo. Instalación, rebuild, verificación, builds, upgrade fixture y
+  los 65 scripts se repitieron en PowerShell sin Bash desde `main`.
+- **Limitación restante:** no demuestra restauración en otro equipo, copia
+  externa, pérdida total, hardware, LAN hostil ni recuperación durante servicio.
 
 #### #19 — dependency review
 
@@ -95,10 +96,9 @@ están en [resultados de pruebas](test-results.md).
 - **Corrección disponible:** PR #22 fija el reloj durante la petición, lo restaura
   con `try/finally` y prueba el límite inclusivo, la orden inmediatamente anterior
   y la exclusión de cancelaciones sin cambiar semántica de producción.
-- **Estado actual en `main`:** #20 sigue abierto y `PARTIAL`; la corrección no
-  está fusionada.
-- **Evidencia y límites:** la rama de PR #22 pasa 31/31 y la suite completa en
-  Windows y Linux. Debe integrarse y repetirse desde el `main` actualizado.
+- **Estado actual en `main`:** PR #22 está fusionada y #20 cerrado (`DONE`).
+- **Evidencia y límites:** el test pasa 31/31 y la suite completa fue repetida
+  desde `main` en Windows sin Bash y en Linux CI; no cambia producción.
 
 #### #16 — decisión de migración aún pendiente
 
@@ -121,9 +121,9 @@ ni al runtime.
 | API y KDS escuchan en todas las interfaces en 3001/3002 | Confirmado mediante prueba ejecutada | `node dev-server.js`, listeners `0.0.0.0:3001` y `0.0.0.0:3002`, salud y HTML 200 | No se ensayó una LAN hostil ni TLS |
 | Flags cloud de pedidos/informes no protegen todos los caminos de datos | Confirmado mediante código | `recordOrderChanged()`, `runCommand()` y `decorateOrder()` no aplican ambos flags; la instantánea incluye cliente/factura/pago | No se registró una cuenta cloud ni tráfico real |
 | Una migración puede continuar si falla la copia previa | Confirmado mediante prueba ejecutada | La suite provoca `Auto-backup before migration failed` y continúa; v10/v14/v30 contienen operaciones destructivas históricas | La fixture feliz v0→v38 sí conserva los datos cubiertos |
-| La instalación raíz es reproducible en el Windows auditado | Confirmado parcialmente | Tras reparar SDK/MSVC, el rebuild nativo pasa; el `main` auditado falla después porque `verify:electron` no encuentra `bash`; PR #21 demuestra la sustitución multiplataforma | PR #21 no está fusionada; #18 sigue abierto |
-| La suite se ejecuta con el comando literal documentado | Confirmado parcialmente | El `main` auditado no encuentra `bash`; PR #21 llega a las pruebas reales y PR #22 corrige la fixture temporal que producía 29/31 | Ambas correcciones siguen sin fusionar; #20 continúa abierto |
-| Builds y suite automatizada son funcionales en el árbol disponible | Confirmado parcialmente | TypeScript, export de 22 rutas y v0→v38 pasan tras instalación limpia con workaround | La suite completa no está verde; sin métrica de cobertura ni E2E local |
+| La instalación raíz es reproducible en el Windows auditado | Confirmado mediante prueba ejecutada | Tras reparar SDK/MSVC, PR #21 elimina Bash; `npm.cmd ci`, rebuild y verificador pasan desde `main` | Desarrollo reproducible en el entorno auditado; no prueba empaquetado ni recuperación externa |
+| La suite se ejecuta con el comando literal documentado | Confirmado mediante prueba ejecutada | PR #21 y PR #22 están fusionadas; `npm.cmd test` ejecuta 65 scripts sin Bash y termina en 0 | Sin métrica de cobertura; errores negativos esperados generan salida ruidosa |
+| Builds y suite automatizada son funcionales en el árbol disponible | Confirmado mediante prueba ejecutada | TypeScript, export de 22 rutas, v0→v38 y suite pasan tras instalación limpia; Linux y Playwright verdes | No hay build de instalador ni validación de hardware |
 | Un pedido persiste tras reiniciar el backend | Confirmado parcialmente | Pedido sintético creado por API, proceso detenido, servidor reiniciado, login y lectura del mismo pedido correctos | El cierre no dejó evidencia de apagado graceful; no se probó corte eléctrico |
 | Impresión está lista para hardware de restaurante | Bloqueado por hardware o información externa | Tests de bytes/perfiles/API simulada pasan | Sin impresora, spooler, cajón, papel, USB/TCP ni cola persistente |
 | Copia y restauración están listas para desastre real | Confirmado parcialmente | Tests desechables y copia premigración feliz pasan | Sin copia fuera del equipo, retención local automática ni simulacro en otra máquina |
@@ -228,15 +228,16 @@ compilación nativa de `better-sqlite3`: `npm install` no puede completar
 script principal de pruebas presupone que `bash` está disponible en `PATH`.
 
 Este bloque conserva el estado histórico. El 2026-07-31 el propietario reparó
-Build Tools/SDK y el rebuild nativo pasó. El bloqueo actual del comando literal
-es el uso de Bash en `postinstall`; la evidencia vigente está en
+Build Tools/SDK y el rebuild nativo pasó. PR #21 eliminó después el bloqueo Bash
+de los caminos obligatorios; la evidencia integrada está en
 [test-results.md](test-results.md).
 
 ## Resultado ejecutivo
 
 El núcleo compila y la suite automatizada es amplia. La repetición histórica
 tras reparar la toolchain encontró dos fallos en `test:reports-insights`; PR #22
-demuestra la causa temporal y su corrección, pero todavía no está fusionada. La
+demostró la causa temporal y la corrección está fusionada. PR #21 también está
+fusionada y la instalación/suite pasan sin Bash desde `main`. La
 actualización de una base desde esquema 0 hasta el esquema actual 38 pasa,
 conserva los datos de la
 fixture, no deja diferencias de esquema y es idempotente. La aplicación
@@ -245,18 +246,16 @@ Electron también arranca, responde a salud y sirve tanto el POS como el KDS.
 No obstante, esta línea base no debe considerarse todavía una validación para
 un restaurante real. Los bloqueos principales son:
 
-1. La instalación del `main` auditado aún depende implícitamente de Bash; PR #21
-   contiene una solución multiplataforma pendiente de revisión y merge.
-2. Las opciones `cloud_orders_enabled` y `cloud_reports_enabled` se cargan,
+1. Las opciones `cloud_orders_enabled` y `cloud_reports_enabled` se cargan,
    pero no protegen los envíos ni los comandos correspondientes. Una
    instantánea de pedido incluye cliente, factura y detalles de pago, en
    contradicción con comentarios y changelog.
-3. Una migración sigue adelante aunque falle la copia automática previa; el
+2. Una migración sigue adelante aunque falle la copia automática previa; el
    histórico contiene operaciones destructivas en v10, v14 y v30.
-4. Los servidores escuchan en toda la red local mediante HTTP/WS sin TLS. En
+3. Los servidores escuchan en toda la red local mediante HTTP/WS sin TLS. En
    Windows se deshabilita el sandbox de GPU y la ventana principal usa
    `sandbox: false`.
-5. La impresión solo se ha verificado con pruebas simuladas/de codificación;
+4. La impresión solo se ha verificado con pruebas simuladas/de codificación;
    faltan ensayos con el hardware, drivers, red y papel que se usarán en sala y
    cocina.
 

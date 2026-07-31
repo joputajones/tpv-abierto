@@ -15,7 +15,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `PARTIAL` | SDK/MSVC reparados; `main` aún requiere Bash, pero PR #21 demuestra una sustitución multiplataforma pendiente de merge |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y suite repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-005/R-011 |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
 | Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
@@ -97,35 +97,34 @@ limite los puertos a subred/dispositivos necesarios, credenciales individuales,
 sin red de invitados y con rotación de sesiones. Diseñar TLS local o un canal
 de emparejado seguro antes de despliegues no controlados.
 
-## P1 — Instalación no reproducible en Windows auditado
+## P1 — Portabilidad Windows mitigada; recuperación externa pendiente
 
 **Hecho observado:** inicialmente `npm install` fallaba al reconstruir
 `better-sqlite3` por una instalación incompleta de Build Tools/SDK. La reparación
-administrativa ya está completada y la toolchain nativa pasa; la falta de SDK no
-es el bloqueo actual. Después apareció la dependencia implícita de Bash en
-`postinstall`/`verify:electron` y `npm test`. PR #21 sustituye esas rutas por
-scripts Node multiplataforma y demuestra instalación/verificación sin Bash en
-PowerShell, además de validación Linux. Sigue sin fusionar, por lo que `main` aún
-conserva el requisito y #18 continúa abierto con estado `PARTIAL`.
+administrativa ya está completada y la toolchain nativa pasa. Después apareció
+la dependencia implícita de Bash en `postinstall`/`verify:electron` y
+`npm test`. PR #21 sustituyó esas rutas por scripts Node multiplataforma y se
+fusionó en `a51fa54`. La instalación limpia, rebuild, verificador, builds,
+upgrade fixture y los 65 scripts se repitieron desde `main` sin Bash; Linux y
+Playwright también pasaron. #18 está cerrado y R-022 `DONE` para ese alcance.
 
 La ejecución histórica con Bash llegó a dos fallos de `test:reports-insights`
 (#20). PR #22 demuestra que la fixture dependía de `Date.now()`: la ventana de
 90 días comenzaba el 2 de mayo de 2026 y excluía la orden del 1 de mayo, causando
 exactamente promedio 20 e ingresos 500. La corrección fija/restaura el reloj en
-el test y no cambia la semántica de producción; también espera revisión y merge.
+el test, no cambia la semántica de producción, está fusionada y #20 cerrado.
 El script `npm run clean` tampoco detuvo el Electron observado en la auditoría
 inicial.
 
-**Por qué importa:** onboarding de colaboradores, CI de Windows, recuperación
-urgente y builds de release pueden depender de estado previo de `node_modules`
-o de herramientas no documentadas. Un TPV necesita una recuperación
-determinista.
+**Riesgo residual:** la portabilidad de desarrollo ya no depende de Bash, pero
+no se construyó un instalador Windows, no se restauró una copia en otro equipo
+y no se simuló pérdida total o recuperación durante servicio. Esas capacidades
+siguen abiertas en R-005/R-011 y no se infieren del cierre de #18.
 
-**Acción recomendada:** revisar e integrar PR #21, actualizarla sobre el `main`
-vigente si es necesario y repetir una instalación limpia sin Bash desde la rama
-principal resultante. Después, integrar PR #22 y repetir la suite completa.
-Conservar documentados Node 22 y VS Build Tools/Windows SDK; corregir también la
-identificación del proceso de `kill-ports.js`. La trazabilidad permanece en el
+**Acción recomendada:** conservar documentados Node 22 y VS Build Tools/Windows
+SDK, añadir una prueba de instalador/restore en otro equipo dentro del riesgo
+correspondiente y corregir por separado la identificación de procesos de
+`kill-ports.js`. La trazabilidad cerrada de portabilidad está en el
 [issue #18](https://github.com/joputajones/tpv-abierto/issues/18).
 
 ## P1 — Impresión sin validación de hardware objetivo

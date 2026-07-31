@@ -17,12 +17,12 @@ and #20 are closed.
 
 After the owner repaired Visual Studio Build Tools and the Windows SDK, the
 native rebuild, TypeScript build, frontend static export and database
-upgrade-path test pass. The current `main` still requires Bash for the root
-postinstall verifier and test aggregator. PR #21 has integrated current `main`
-and replaces those mandatory paths with cross-platform Node scripts. The
-updated Windows acceptance path and all 65 test scripts pass without Bash, but
-CI and merge are still pending, so issue #18 and R-022 remain `PARTIAL`, not
-`DONE`.
+upgrade-path test pass. PR #21 merged at `a51fa54` and replaced the mandatory
+Bash verifier/test paths with cross-platform Node scripts. GitHub CI passed and
+the acceptance path was repeated from the integrated `main`: clean install,
+native rebuild, Electron verification, builds and all 65 test scripts pass in
+PowerShell without Bash. Issue #18 is closed and R-022 is `DONE` for that
+development-portability scope.
 
 The historical root suite stopped at two reproducible `test:reports-insights`
 failures (29/31). PR #22 proved that a `Date.now()`-dependent fixture, not the
@@ -50,8 +50,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
-| Clean dependency installation | `PARTIAL` | After integrating current `main`, PR #21 runs `npm.cmd ci`, native rebuild and Electron verification without Bash; CI and merge remain pending (#18) |
-| Baseline test suite | `PARTIAL` | PR #22 and #20 are complete; PR #21 passes all 65 scripts without Bash and proves fail-fast error propagation, but CI and merge remain pending |
+| Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
+| Baseline test suite | `DONE` | Integrated `main` passes all 65 scripts without Bash; fail-fast propagation was proved with a reverted synthetic failure and Linux CI passed |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
@@ -84,8 +84,8 @@ Exit criteria:
 
 - [x] Local repository remotes and branches recorded; evidence merged in PR #14.
 - [x] Node and npm versions recorded; evidence merged in PR #14.
-- [ ] Clean dependency installation completed.
-- [ ] Existing tests completed; reports are fixed, while the Bash-free runner awaits merge.
+- [x] Clean dependency installation completed without Bash on integrated `main`.
+- [x] Existing tests completed; all 65 scripts pass on Windows and Linux.
 - [x] Main build completed; evidence merged in PR #14.
 - [x] Frontend build completed; evidence merged in PR #14.
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
@@ -93,32 +93,25 @@ Exit criteria:
 - [x] One disposable order survives an application process restart; limited evidence merged in PR #14.
 - [x] Baseline architecture and production risks documented in PR #14.
 
-M0 remains `IN_PROGRESS`: the cross-platform install/test runner remains in
-unmerged PR #21, issue #16 remains open, and clean/abrupt restart behaviour
-still needs a complete controlled matrix. The merged reports fix does not close
-those gaps.
+M0 remains `IN_PROGRESS`: Windows development portability is complete, but
+issue #16 remains open and clean/abrupt restart behaviour still needs a
+complete controlled matrix. The merged portability and reports fixes do not
+close those gaps or validate physical restaurant operation.
 
 ## Immediate next actions
 
-1. Review and integrate the cross-platform runner in
-   [PR #21](https://github.com/joputajones/tpv-abierto/pull/21), then close
-   [#18](https://github.com/joputajones/tpv-abierto/issues/18) through its merge.
-2. After PR #21 merges, repeat the Bash-free acceptance path from `main` and
-   reconcile the evidence without overstating physical recovery coverage.
-3. Resolve the fail-closed decision in
+1. Resolve the fail-closed decision in
    [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
    existing databases before migration without editing released migrations. A
    new empty database may be considered only through an explicit, deterministic
    condition, never file size or a probabilistic heuristic.
-4. Define and enforce the cloud data contract and feature flags before any
+2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
-5. Run the M1 bench gate with representative printer hardware, two local
+3. Run the M1 bench gate with representative printer hardware, two local
    clients, KDS and Internet/LAN failure scenarios.
 
 ## Blockers
 
-- Build Tools/MSVC/SDK and the updated Bash-free Windows validation are complete.
-  Current `main` still has the old paths until PR #21 passes CI and merges (#18).
 - Premigration backup failure is not fail-closed for an existing database
   (issue #16).
 - Dependency review is operational, but no branch protection or ruleset enforces
