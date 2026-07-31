@@ -38,6 +38,12 @@ verified fail-closed barrier for every pre-existing database file, including
 `user_version = 0` and zero-byte files. Its 66-script Windows suite and all CI
 jobs pass; #16 is closed and R-005 is `DONE` for premigration safety.
 
+Issue [#30](https://github.com/joputajones/tpv-abierto/issues/30) tracks the
+controlled graceful/abrupt restart matrix. The PR branch exercises the real
+SQLite, API and KDS lifecycle in child processes under disposable `userData`,
+passes R-01 through R-12 locally on Windows and proves its negative assertion
+fails cleanly. This evidence remains `PARTIAL` until review, Linux CI and merge.
+
 These results improve confidence in the code baseline; they do not establish
 production readiness, Spanish fiscal compliance or suitability for a real
 restaurant.
@@ -61,7 +67,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
 | Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit; standalone backend restart was repeated, but no packaged Windows build was tested |
-| SQLite persistence | `PARTIAL` | One synthetic pending order survived process termination and restart; graceful plus abrupt restart matrix remains incomplete |
+| SQLite persistence | `PARTIAL` | #30 branch passes graceful/abrupt commit persistence, open-transaction rollback, WAL recovery, repeated reopen and port reuse with synthetic child processes; pending review, Linux CI and merge |
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
@@ -96,17 +102,18 @@ Exit criteria:
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
 - [x] Database, logs and backup paths recorded in PR #14.
 - [x] One disposable order survives an application process restart; limited evidence merged in PR #14.
+- [ ] Controlled graceful/abrupt restart matrix reviewed and integrated; #30 branch evidence is local and pending merge.
 - [x] Baseline architecture and production risks documented in PR #14.
 
 M0 remains `IN_PROGRESS`: Windows development portability and the fail-closed
-premigration barrier are complete, but clean/abrupt restart behaviour still
-needs a complete controlled matrix. The merged corrections do not validate
-physical restaurant operation.
+premigration barrier are complete. The controlled restart matrix passes locally
+on the #30 branch but is not yet integrated or validated by Linux CI. Even after
+merge, this simulation will not validate physical restaurant operation.
 
 ## Immediate next actions
 
-1. Complete the controlled graceful/abrupt restart matrix with disposable data
-   and preserve exact evidence for the M0 exit decision.
+1. Review and integrate the controlled graceful/abrupt restart matrix tracked
+   in #30, then reevaluate M0 without closing it automatically.
 2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 3. Run the M1 bench gate with representative printer hardware, two local

@@ -39,6 +39,7 @@ const TEST_SCRIPTS = Object.freeze([
   'test:integration-tax',
   'test:integration-payments',
   'test:integration-lifecycle',
+  'test:restart-recovery',
   'test:integration-reconciliation',
   'test:integration-loyalty',
   'test:integration-discount',

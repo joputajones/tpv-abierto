@@ -154,6 +154,25 @@ foráneas activadas después de migrar. Al arrancar ejecuta
 `integrity_check` y `foreign_key_check`; registra problemas, pero no siempre
 detiene el servicio.
 
+### Ciclo de cierre y arnés de reinicio
+
+`main/index.ts` abre la base antes de API/KDS. Su `runCleanup()` es idempotente
+y detiene cloud, telemetría, Google Drive, WhatsApp, mDNS, KDS y API antes de
+`closeDatabase()`; `will-quit`, `quit`, `SIGTERM` y `SIGINT` desembocan en ese
+camino. `stopKdsServer()` termina clientes WebSocket y cierra su listener;
+`stopServer()` cierra WebSocket/API; `closeDatabase()` invalida y cierra el
+handle síncrono. Una conexión SQLite cerrada o terminada con una transacción
+abierta no confirma esa transacción.
+
+La matriz de [#30](https://github.com/joputajones/tpv-abierto/issues/30) usa un
+padre y workers Electron-as-Node. Cada worker simula explícitamente
+`app.isPackaged=true`, devuelve un `userData` temporal único e importa el
+`initDatabase()`, API, KDS y cierres de producción sin importar `main/index.ts`.
+WhatsApp es un no-op visible del arnés; cloud, telemetría, updater, mDNS,
+impresión y ventana no arrancan. El padre elige puertos efímeros distintos de
+3001/3002, espera IPC y health 200, y solo puede forzar PIDs registrados. Esta
+evidencia sigue `PARTIAL` hasta CI/merge y su nivel máximo es `SIM`.
+
 Las copias manuales usan la API de backup de SQLite, pasan a journal DELETE y
 añaden `_flo_meta` con versión de esquema, fecha y versión de aplicación. Puede
 elegirse una ruta externa; solo las copias del directorio administrado aparecen
