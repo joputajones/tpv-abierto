@@ -59,12 +59,31 @@ async function main() {
   assert.equal(TEST_SCRIPTS.at(-1), 'test:cross-platform-scripts');
 
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
-  const noBashPath = path.dirname(process.execPath);
-  const verifierResult = await runCommand(process.execPath, [verifier], {
-    env: { ...process.env, PATH: noBashPath, Path: noBashPath },
-    stdio: 'ignore',
-  });
-  assert.equal(verifierResult.exitCode, 0);
+  const noBashPathEntries = [path.dirname(process.execPath)];
+  let nativeToolsDir;
+
+  try {
+    if (process.platform === 'darwin') {
+      nativeToolsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'flo native tools '));
+      for (const tool of ['codesign', 'xattr']) {
+        const systemTool = path.join('/usr/bin', tool);
+        assert.equal(fs.existsSync(systemTool), true, `${systemTool} is required on macOS`);
+        fs.symlinkSync(systemTool, path.join(nativeToolsDir, tool));
+      }
+      noBashPathEntries.push(nativeToolsDir);
+    }
+
+    const noBashPath = noBashPathEntries.join(path.delimiter);
+    const verifierResult = await runCommand(process.execPath, [verifier], {
+      env: { ...process.env, PATH: noBashPath, Path: noBashPath },
+      stdio: 'ignore',
+    });
+    assert.equal(verifierResult.exitCode, 0);
+  } finally {
+    if (nativeToolsDir) {
+      fs.rmSync(nativeToolsDir, { recursive: true, force: true });
+    }
+  }
 
   console.log('Cross-platform script tests passed.');
 }
