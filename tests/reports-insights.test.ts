@@ -20,6 +20,21 @@ const Module = require('module');
 const originalLoad = Module._load;
 const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'flo-reports-insights-'));
 
+// Freeze only the endpoint's trailing-window calculation. With this reference,
+// a 90-day window starts on 2026-05-01 and the SQL date comparison includes
+// that whole boundary day. Keeping the fixture clock explicit prevents the
+// test from aging as the real calendar advances.
+const INSIGHTS_REFERENCE_TIME = '2026-07-30T12:00:00.000Z';
+const INSIGHTS_REFERENCE_TIME_MS = Date.parse(INSIGHTS_REFERENCE_TIME);
+const INSIGHTS_WINDOW_DAYS = 90;
+const INSIGHTS_WINDOW_START_DATE = '2026-05-01';
+const calculatedWindowStart = new Date(
+  INSIGHTS_REFERENCE_TIME_MS - INSIGHTS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+).toISOString().slice(0, 10);
+if (calculatedWindowStart !== INSIGHTS_WINDOW_START_DATE) {
+  throw new Error(`Invalid insights fixture window: expected ${INSIGHTS_WINDOW_START_DATE}, got ${calculatedWindowStart}`);
+}
+
 Module._load = function (request: string, parent: unknown, isMain: boolean) {
   if (request === 'electron') {
     return { app: { isPackaged: true, getPath: () => testDir, getVersion: () => 'test' } };
@@ -135,7 +150,7 @@ async function main() {
     insertOrder.run(fixture.id, bucketUserId, fixture.createdAt, fixture.createdAt, null, null);
   }
 
-  // These four use fixed timestamps rather than now() so they land in hour/day
+  // These fixed timestamps land in hour/day
   // buckets that don't perturb the busiest/idlest fixture above (each is on a
   // distinct weekday and hour, none matching Monday/Tuesday or hour 8/14) —
   // otherwise a test run whose real wall-clock happens to fall in the same
@@ -150,6 +165,13 @@ async function main() {
     VALUES (?, ?, 'takeaway', 'completed', 50, 50, ?, ?, ?, ?)
   `).run('ORD-PREP-2', waiterId, '2026-05-02T05:00:00.000Z', '2026-05-02T05:00:00.000Z', '2026-07-01T11:00:00.000Z', '2026-07-01T11:20:00.000Z');
 
+  // One millisecond before the inclusive boundary date. Its 90-minute prep
+  // time and 700 revenue make an accidental inclusion fail both aggregates.
+  db.prepare(`
+    INSERT INTO orders (order_number, user_id, type, status, subtotal, total, created_at, updated_at, cooking_started_at, ready_at)
+    VALUES (?, ?, 'takeaway', 'completed', 700, 700, ?, ?, ?, ?)
+  `).run('ORD-BEFORE-WINDOW', cashierId, '2026-04-30T23:59:59.999Z', '2026-04-30T23:59:59.999Z', '2026-07-01T12:00:00.000Z', '2026-07-01T13:30:00.000Z');
+
   // ── Seed top-staff orders: cashier earns more than waiter ────────────
   db.prepare(`
     INSERT INTO orders (order_number, user_id, type, status, subtotal, total, created_at, updated_at)
@@ -160,11 +182,11 @@ async function main() {
     VALUES (?, ?, 'takeaway', 'completed', 50, 50, ?, ?)
   `).run('ORD-STAFF-WAITER', waiterId, '2026-05-06T07:00:00.000Z', '2026-05-06T07:00:00.000Z');
 
-  // A cancelled order with a huge total must NOT count toward top staff or AOV.
+  // This in-window cancelled order must not affect staff revenue or prep time.
   db.prepare(`
-    INSERT INTO orders (order_number, user_id, type, status, subtotal, total, created_at, updated_at)
-    VALUES (?, ?, 'takeaway', 'cancelled', 99999, 99999, ?, ?)
-  `).run('ORD-CANCELLED', cashierId, now(), now());
+    INSERT INTO orders (order_number, user_id, type, status, subtotal, total, created_at, updated_at, cooking_started_at, ready_at)
+    VALUES (?, ?, 'takeaway', 'cancelled', 99999, 99999, ?, ?, ?, ?)
+  `).run('ORD-CANCELLED', cashierId, '2026-06-02T06:00:00.000Z', '2026-06-02T06:00:00.000Z', '2026-07-01T14:00:00.000Z', '2026-07-01T15:00:00.000Z');
 
   // ── Seed top-category order_items: Food (Burger) outsells Drinks (Tea) ──
   const categoryOrderId = (db.prepare(`SELECT id FROM orders WHERE order_number = 'ORD-STAFF-CASHIER'`).get() as any).id;
@@ -238,21 +260,35 @@ async function main() {
     }
 
     console.log('\n2. GET /api/reports/insights?days=90');
-    const res = await request(app).get('/api/reports/insights?days=90').set('Authorization', `Bearer ${ownerToken}`);
+    const originalDateNow = Date.now;
+    let res: any;
+    try {
+      Date.now = () => INSIGHTS_REFERENCE_TIME_MS;
+      res = await request(app).get('/api/reports/insights?days=90').set('Authorization', `Bearer ${ownerToken}`);
+    } finally {
+      Date.now = originalDateNow;
+    }
     assertEqual(res.status, 200, `owner gets 200 (got ${res.status}, ${JSON.stringify(res.body)})`);
     const body = res.body;
+    assertEqual(
+      body.ordersAnalyzed,
+      12,
+      'window includes 8 bucket orders, boundary ORD-PREP-1, inside ORD-PREP-2 and 2 staff orders; excludes pre-window and cancelled orders',
+    );
 
     console.log('\n3. AOV');
     assertEqual(body.aov, 150, 'AOV is (100+200)/2 = 150');
 
     console.log('\n4. Avg prep time');
-    assertEqual(body.avgPrepTimeMinutes, 15, 'avg prep time is (10+20)/2 = 15 minutes');
+    assertEqual(body.avgPrepTimeMinutes, 15, 'avg prep is boundary 10 + inside 20 = 15; pre-window 90 and cancelled 60 are excluded');
 
     console.log('\n5. Top staff (cancelled order excluded, cashier ranks above waiter)');
     assertEqual(body.topStaff?.[0]?.user_id, cashierId, 'cashier is #1 by revenue');
-    assertEqual(body.topStaff?.[0]?.revenue, 550, 'cashier revenue is 500 (ORD-STAFF-CASHIER) + 50 (ORD-PREP-1) = 550');
-    assertEqual(body.topStaff?.[1]?.user_id, waiterId, 'waiter is #2 by revenue');
-    assertEqual(body.topStaff?.[1]?.revenue, 100, 'waiter revenue is 50 (ORD-STAFF-WAITER) + 50 (ORD-PREP-2) = 100');
+    assertEqual(body.topStaff?.[0]?.revenue, 550, 'cashier revenue is staff 500 + boundary prep 50; pre-window 700 and cancelled 99999 are excluded');
+    assert(
+      body.topStaff?.[1]?.user_id === waiterId && body.topStaff?.[1]?.revenue === 100,
+      'waiter is #2 with staff 50 + inside-window prep 50 = 100',
+    );
     const cancelledCounted = (body.topStaff ?? []).some((s: any) => s.revenue >= 99999);
     assert(!cancelledCounted, 'the cancelled order revenue (99999) is excluded from top staff');
 
