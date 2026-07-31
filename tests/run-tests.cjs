@@ -55,6 +55,7 @@ const TEST_SCRIPTS = Object.freeze([
   'test:tables-string-ids',
   'test:held-orders',
   'test:schema-health',
+  'test:migration-backup-fail-closed',
   'test:upgrade-path',
   'test:master-pin',
   'test:google-drive',

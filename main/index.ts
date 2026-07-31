@@ -3,7 +3,16 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { Bonjour } from 'bonjour-service';
-import { initDatabase, closeDatabase, SchemaVersionMismatchError } from './db';
+import {
+  initDatabase,
+  closeDatabase,
+  PreMigrationBackupError,
+  SchemaVersionMismatchError,
+} from './db';
+import {
+  PRE_MIGRATION_BACKUP_OPERATOR_MESSAGE,
+  getPreMigrationBackupTelemetryPayload,
+} from './pre-migration-backup';
 import { startServer, stopServer, getLocalIP, isServerRunning } from './server';
 import { cloudSync } from './services/cloud-sync';
 import { telemetry, sendEvent as sendTelemetryEvent } from './services/telemetry';
@@ -670,17 +679,27 @@ async function initialize(): Promise<void> {
 
     console.log('[Flo] Ready!');
   } catch (error) {
-    console.error('[Flo] Initialization error:', error);
-    dialog.showErrorBox('Initialization Error', `Failed to start Flo: ${error}`);
+    if (error instanceof PreMigrationBackupError) {
+      console.error(
+        `[Flo] Required pre-migration backup failed at ${error.stage} `
+        + `(schema v${error.fromVersion} to v${error.targetVersion})`,
+      );
+      dialog.showErrorBox('Database Update Blocked', PRE_MIGRATION_BACKUP_OPERATOR_MESSAGE);
+    } else {
+      console.error('[Flo] Initialization error:', error);
+      dialog.showErrorBox('Initialization Error', `Failed to start Flo: ${error}`);
+    }
 
     // Best-effort: report the fatal startup failure so support can see which
     // installs are stuck on a stale build without waiting for a user to
     // describe the error message themselves. Never let this delay/block the
     // actual quit — db may not even be open yet depending on where init failed.
     try {
-      const payload: Record<string, unknown> = {
-        error_message: String(error instanceof Error ? error.message : error).slice(0, 500),
-      };
+      const payload: Record<string, unknown> = error instanceof PreMigrationBackupError
+        ? getPreMigrationBackupTelemetryPayload(error)
+        : {
+            error_message: String(error instanceof Error ? error.message : error).slice(0, 500),
+          };
       if (error instanceof SchemaVersionMismatchError) {
         payload.db_schema_version = error.dbVersion;
         payload.app_schema_version = error.appVersion;
