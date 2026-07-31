@@ -35,22 +35,23 @@ evidence alone.
 | `npm.cmd test` on historical audited `main` | `PARTIAL` | Historical literal command exited 1 without Bash; retained as failure history |
 | `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | `PARTIAL` | Historical workaround reached the reports regression; PR #22 is now merged, #20 closed and the deterministic test passes 31/31 |
 | `npm.cmd run test:reports-insights` on integrated `main` | `DONE` | PR #22 freezes the request clock, covers the inclusive 90-day boundary and passes 31/31 on Windows/Linux; #20 is closed |
-| `npm.cmd ci` on integrated `main` | `DONE` | Exit 0 in 30.9 s without Bash; 648 packages, native rebuild and Electron verification pass |
-| `npm.cmd test` on integrated `main` | `DONE` | Exit 0 in 151.8 s without Bash; all 65 scripts run, including those after reports |
-| `npm.cmd run test:migration-backup-fail-closed` | `PARTIAL` | PR branch exercises production initialization and blocks checkpoint, destination/copy/open, integrity, version and finalization failures before v1; existing v0/zero-byte files require backup; pending merge |
-| `npm.cmd run test:upgrade-path` | `PARTIAL` | v0→v38, verified backup, integrity, FK, preservation, schema parity and idempotency pass on the PR branch; pending merge |
+| `npm.cmd ci` on integrated `main` | `DONE` | Exit 0 in 32.1 s without Bash after PR #28; 648 packages, native rebuild and Electron verification pass |
+| `npm.cmd test` on integrated `main` | `DONE` | Exit 0 in 154.8 s without Bash after PR #28; all 66 scripts run, including those after migration backup |
+| `npm.cmd run test:migration-backup-fail-closed` | `DONE` | Integrated production initialization blocks checkpoint, destination/copy/open, integrity, version and finalization failures before v1; existing v0/zero-byte files require backup |
+| `npm.cmd run test:upgrade-path` | `DONE` | Integrated v0→v38 path creates a verified backup and passes integrity, FK, preservation, schema parity and idempotency |
 | `npm.cmd run build` | `PARTIAL` | TypeScript and runtime-asset copy pass |
-| `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; 9 high frontend tooling advisories remain |
+| `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; the current clean install reports 0 frontend vulnerabilities, while the historical 9-high result remains recorded |
 | `node dev-server.js` | `PARTIAL` | API/POS `:3001`, KDS `:3002`, health and HTML 200; synthetic order survived termination/restart |
 | `npm.cmd audit --json` | `PARTIAL` | 1 moderate transitive development advisory (`tar`) |
-| `cd frontend; npm.cmd audit --json` | `PARTIAL` | 9 high advisories in frontend lint/tooling dependency paths |
+| `cd frontend; npm.cmd audit --json` | `PARTIAL` | Historical direct audit found 9 high lint/tooling advisories; the current clean-install output reports 0, but the direct audit was not repeated in the post-PR #28 gate |
 
 PR #21 and #18 are complete for the Bash-free development path. Hardware,
 off-device recovery, network-failure and pilot evidence was not manufactured
 from code tests, and historical failures remain recorded above.
 
-The #16 PR branch adds the 66th root test. Local Windows validation passes all
-66 scripts without Bash, but the canonical risk remains `PARTIAL` until merge.
+PR #28 adds the 66th root test. Integrated Windows validation passes all 66
+scripts without Bash; Linux baseline and Playwright also pass. #16 is closed
+and R-005 is `DONE` for the premigration scope only.
 
 ## Baseline and build
 
@@ -60,8 +61,8 @@ The #16 PR branch adds the 66th root test. Local Windows validation passes all
 | T-BLD-002 | Main TypeScript build | `BUILD` | `DONE` | Integrated `main` TypeScript build passes locally and in Linux CI |
 | T-BLD-003 | Frontend static build | `BUILD` | `DONE` | Integrated `main` exports 22 routes locally and in CI; tooling advisories remain tracked separately |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 65 scripts without Bash on Windows and passes the Linux core suite; #20 and #18 are closed |
-| T-BLD-006 | Existing database upgrade path | `CODE` | `PARTIAL` | PR branch blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification; pending merge |
+| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 66 scripts without Bash on Windows and passes the Linux core suite; #16, #18 and #20 are closed |
+| T-BLD-006 | Existing database upgrade path | `CODE` | `DONE` | Integrated `main` blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification |
 
 ## Orders and concurrency
 
@@ -104,7 +105,7 @@ The #16 PR branch adds the 66th root test. Local Windows validation passes all
 | T-BKP-001 | Manual backup creation | `SIM` | `PARTIAL` | Automated API/service path passes |
 | T-BKP-002 | Automatic/local backup history | `SIM` | `PARTIAL` | Migration backups pass on happy path; no automatic local retention policy observed |
 | T-BKP-003 | Restore into disposable installation | `SIM` | `PARTIAL` | Automated restore test passes |
-| T-BKP-004 | Database migration creates pre-migration backup | `CODE` + `SIM` | `PARTIAL` | PR branch verifies version/integrity/read-only reopen, publishes atomically and proves isolated synthetic retry; pending merge and not an off-device recovery claim |
+| T-BKP-004 | Database migration creates pre-migration backup | `CODE` + `SIM` | `DONE` | Integrated path verifies version/integrity/read-only reopen, publishes atomically and proves isolated synthetic retry; not an off-device recovery claim |
 | T-BKP-005 | Restore instructions followed by a second person | `BENCH` | `BLOCKED` | Second operator and off-device copy unavailable |
 
 ## Diagnostics and privacy

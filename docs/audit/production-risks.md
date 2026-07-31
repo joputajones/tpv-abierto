@@ -12,13 +12,13 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Riesgo técnico | ID oficial | Estado de mitigación | Evidencia / limitación |
 | --- | --- | --- | --- |
 | Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
-| Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | El fallo fail-open histórico se reprodujo; la rama de PR valida el bloqueo y la copia verificada, pendiente de merge |
+| Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `DONE` | PR #28 integrada; el fallo histórico está reproducido y el camino actual bloquea antes de v1 hasta verificar la copia |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y suite repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-005/R-011 |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 66 scripts repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-011 |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
-| Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
+| Backups frente a desastre | R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro. El cierre de R-005 no acredita desastre |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
 | Telemetría antes de consentimiento | R-020 | `NOT_STARTED` | Confirmado por defaults/orden de arranque; sin captura HTTPS |
 | Operación offline | R-011 / CORE-004 | `UNVERIFIED` | Backend local funciona; Electron completo no fue aislado |
@@ -59,22 +59,22 @@ envío y lectura remota, y actualizar documentación/consentimiento.
 
 **Hecho observado:** el camino histórico capturaba cualquier error de copia,
 escribía un log y continuaba; la reproducción real alcanzó v38 después de un
-fallo de destino. La rama de #16 añade una barrera verificada y fail-closed
+fallo de destino. PR #28 integra una barrera verificada y fail-closed
 antes del lote. Las migraciones históricas v10, v14 y v30 incluyen `DROP TABLE`,
 borrado de settings y `DROP COLUMN` y permanecen sin cambios.
 
 **Por qué importa:** disco lleno, permisos, antivirus o fallo de checkpoint
-pueden dejar al usuario sin copia justo antes de transformar datos. La suite
-prueba la ruta feliz, no el fallo de copia. El comportamiento contradice la
-expectativa de seguridad del README.
+pueden dejar al usuario sin copia justo antes de transformar datos. Antes de PR
+#28, la suite probaba la ruta feliz, no el fallo de copia. Ese comportamiento
+contradecía la expectativa de seguridad del README.
 
-**Acción en validación:** la rama de PR clasifica una base nueva solo si el
-archivo no existía antes de abrirlo; todo archivo existente, incluido v0,
-requiere checkpoint completo y copia verificada antes de la primera migración.
-Las pruebas cubren destino, copia, integridad, versión, finalización, fuente
-intacta y reintento v0→v38. #16 permanece abierto y R-005 `PARTIAL` hasta el
-merge. Aun después, harán falta fixtures saneadas de otras versiones y un
-simulacro operativo externo; véase
+**Mitigación integrada:** PR #28 clasifica una base nueva solo si el archivo no
+existía antes de abrirlo; todo archivo existente, incluido v0, requiere
+checkpoint completo y copia verificada antes de la primera migración. Las
+pruebas cubren destino, copia, apertura, integridad, versión, finalización,
+fuente intacta y reintento v0→v38. #16 está cerrado y R-005 `DONE` dentro de
+este alcance. Siguen pendientes fixtures saneadas de otras versiones y un
+simulacro operativo externo bajo R-011; véase
 [ADR-003](../project/decisions/ADR-003-pre-migration-backup-fail-closed.md).
 
 ## P1 — API LAN sin cifrado y sandbox reducido
@@ -106,7 +106,7 @@ administrativa ya está completada y la toolchain nativa pasa. Después apareci�
 la dependencia implícita de Bash en `postinstall`/`verify:electron` y
 `npm test`. PR #21 sustituyó esas rutas por scripts Node multiplataforma y se
 fusionó en `a51fa54`. La instalación limpia, rebuild, verificador, builds,
-upgrade fixture y los 65 scripts se repitieron desde `main` sin Bash; Linux y
+upgrade fixture y, tras PR #28, los 66 scripts se repitieron desde `main` sin Bash; Linux y
 Playwright también pasaron. #18 está cerrado y R-022 `DONE` para ese alcance.
 
 La ejecución histórica con Bash llegó a dos fallos de `test:reports-insights`
@@ -120,7 +120,7 @@ inicial.
 **Riesgo residual:** la portabilidad de desarrollo ya no depende de Bash, pero
 no se construyó un instalador Windows, no se restauró una copia en otro equipo
 y no se simuló pérdida total o recuperación durante servicio. Esas capacidades
-siguen abiertas en R-005/R-011 y no se infieren del cierre de #18.
+siguen abiertas en R-011 y no se infieren del cierre de #18 ni de R-005.
 
 **Acción recomendada:** conservar documentados Node 22 y VS Build Tools/Windows
 SDK, añadir una prueba de instalador/restore en otro equipo dentro del riesgo

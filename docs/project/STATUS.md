@@ -20,7 +20,7 @@ native rebuild, TypeScript build, frontend static export and database
 upgrade-path test pass. PR #21 merged at `a51fa54` and replaced the mandatory
 Bash verifier/test paths with cross-platform Node scripts. GitHub CI passed and
 the acceptance path was repeated from the integrated `main`: clean install,
-native rebuild, Electron verification, builds and all 65 test scripts pass in
+native rebuild, Electron verification, builds and all 66 test scripts pass in
 PowerShell without Bash. Issue #18 is closed and R-022 is `DONE` for that
 development-portability scope.
 
@@ -33,10 +33,10 @@ and restart through the recommended standalone development server, but a
 graceful Electron shutdown and abrupt-power-loss cycle have not both been
 demonstrated.
 
-The #16 branch reproduces the historical fail-open migration path and validates
-a verified fail-closed barrier for every pre-existing database file, including
-`user_version = 0`. Its 66-script Windows suite passes without Bash, but #16 and
-R-005 remain open/`PARTIAL` until the correction is merged.
+PR #28 reproduces the historical fail-open migration path and integrates a
+verified fail-closed barrier for every pre-existing database file, including
+`user_version = 0` and zero-byte files. Its 66-script Windows suite and all CI
+jobs pass; #16 is closed and R-005 is `DONE` for premigration safety.
 
 These results improve confidence in the code baseline; they do not establish
 production readiness, Spanish fiscal compliance or suitability for a real
@@ -56,16 +56,16 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
-| Baseline test suite | `DONE` | Integrated `main` passes all 65 scripts without Bash; fail-fast propagation was proved with a reverted synthetic failure and Linux CI passed |
-| Upgrade-path test | `PARTIAL` | PR branch validates fail-closed checkpoint/copy/integrity/version/finalization failures plus v0→v38, preservation, parity, idempotency and isolated retry; #16 remains open until merge |
+| Baseline test suite | `DONE` | Integrated `main` passes all 66 scripts without Bash; fail-fast propagation was proved with a reverted synthetic failure and Linux CI passed |
+| Upgrade-path test | `DONE` | Integrated `main` blocks checkpoint/copy/open/integrity/version/finalization failures before v1 and passes v0→v38, preservation, parity, idempotency and isolated retry; PR #28 merged and #16 closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
-| Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
+| Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
 | Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit; standalone backend restart was repeated, but no packaged Windows build was tested |
 | SQLite persistence | `PARTIAL` | One synthetic pending order survived process termination and restart; graceful plus abrupt restart matrix remains incomplete |
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | PR branch creates and reopens a verified local premigration copy and retries the synthetic upgrade independently; no off-device restore drill or second-person procedure |
+| Backup and restore validation | `PARTIAL` | Integrated `main` creates and reopens a verified local premigration copy and retries the synthetic upgrade independently; no off-device restore drill or second-person procedure |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
@@ -90,7 +90,7 @@ Exit criteria:
 - [x] Local repository remotes and branches recorded; evidence merged in PR #14.
 - [x] Node and npm versions recorded; evidence merged in PR #14.
 - [x] Clean dependency installation completed without Bash on integrated `main`.
-- [x] Existing tests completed; all 65 scripts pass on Windows and Linux.
+- [x] Existing tests completed; all 66 scripts pass on Windows and Linux.
 - [x] Main build completed; evidence merged in PR #14.
 - [x] Frontend build completed; evidence merged in PR #14.
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
@@ -98,17 +98,15 @@ Exit criteria:
 - [x] One disposable order survives an application process restart; limited evidence merged in PR #14.
 - [x] Baseline architecture and production risks documented in PR #14.
 
-M0 remains `IN_PROGRESS`: Windows development portability is complete, but
-issue #16 remains open and clean/abrupt restart behaviour still needs a
-complete controlled matrix. The merged portability and reports fixes do not
-close those gaps or validate physical restaurant operation.
+M0 remains `IN_PROGRESS`: Windows development portability and the fail-closed
+premigration barrier are complete, but clean/abrupt restart behaviour still
+needs a complete controlled matrix. The merged corrections do not validate
+physical restaurant operation.
 
 ## Immediate next actions
 
-1. Review and merge the fail-closed implementation tracked in
-   [#16](https://github.com/joputajones/tpv-abierto/issues/16). The PR branch
-   classifies a new database only by prior file absence and protects existing
-   databases without editing released migrations.
+1. Complete the controlled graceful/abrupt restart matrix with disposable data
+   and preserve exact evidence for the M0 exit decision.
 2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 3. Run the M1 bench gate with representative printer hardware, two local
@@ -116,8 +114,6 @@ close those gaps or validate physical restaurant operation.
 
 ## Blockers
 
-- The fail-closed premigration correction is locally validated but not yet
-  merged; issue #16 remains open.
 - Dependency review is operational, but no branch protection or ruleset enforces
   it; a red check remains a manual governance blocker.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
