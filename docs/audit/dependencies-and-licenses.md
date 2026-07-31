@@ -12,13 +12,13 @@
 | Limitación | El inventario refleja metadatos declarados; no sustituye revisión jurídica ni análisis del binario empaquetado |
 
 Actualización 2026-07-31: tras reparar Build Tools/Windows SDK, el rebuild de
-`better-sqlite3@13.0.1` termina correctamente para Electron 43. En el `main`
-auditado, `npm.cmd ci` falla después en `verify:electron` porque invoca Bash y
-Git Bash está fuera de `PATH`; la instalación completa pasa al añadirlo solo al
-proceso. PR #21 demuestra una sustitución Node multiplataforma con instalación y
-verificación correctas en PowerShell sin Bash, pero permanece sin fusionar. Por
-ello la toolchain nativa está validada y #18 es `PARTIAL`; el `main` vigente aún
-no es independiente de Bash.
+`better-sqlite3@13.0.1` termina correctamente para Electron 43. Históricamente,
+el `main` auditado fallaba después en `verify:electron` porque invocaba Bash y
+Git Bash estaba fuera de `PATH`. PR #21 sustituyó ese flujo por scripts Node
+multiplataforma y se integró en `main` mediante el commit
+`a51fa541604925762c759cd6ad1c98514cf61de6`; `npm.cmd ci` y la verificación de
+Electron pasan ahora en PowerShell sin Bash. La toolchain nativa está validada y
+el alcance de portabilidad de desarrollo de #18 queda `DONE`.
 
 La repetición de `npm audit` conserva 1 vulnerabilidad moderada raíz (`tar`,
 transitiva de desarrollo) y 9 altas en tooling frontend. No se añadió,
