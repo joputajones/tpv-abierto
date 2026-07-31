@@ -13,10 +13,10 @@ Los riesgos de esta auditoría se reflejan ahora en
 | --- | --- | --- | --- |
 | Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `DONE` | PR #28 integrada; el fallo histórico está reproducido y el camino actual bloquea antes de v1 hasta verificar la copia |
-| Reinicio graceful/abrupto sin matriz | CORE-002 / [#30](https://github.com/joputajones/tpv-abierto/issues/30) | `PARTIAL` | R-01…R-12 pasan localmente en la rama con datos/procesos temporales; falta revisión, Linux CI y merge |
+| Reinicio graceful/abrupto sin matriz | CORE-002 / [#30](https://github.com/joputajones/tpv-abierto/issues/30) | `DONE` | PR #31 integra R-01…R-12 en Windows/Linux con datos y procesos temporales; #30 está cerrado. El alcance es `SIM` |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 66 scripts repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-011 |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 67 scripts repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-011 |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
 | Backups frente a desastre | R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro. El cierre de R-005 no acredita desastre |
@@ -101,20 +101,20 @@ de emparejado seguro antes de despliegues no controlados.
 
 ## P1 — Reinicio local simulado; corte físico no demostrado
 
-**Evidencia en revisión:** la rama de #30 abre la base de producción bajo un
+**Evidencia integrada:** PR #31 abre la base de producción bajo un
 `userData` temporal, confirma operaciones en WAL, deja otras bajo
 `BEGIN IMMEDIATE`, alterna cierres graceful y terminaciones forzadas, reinicia
 API/KDS en puertos aislados y repite un upgrade saneado. R-01…R-12 pasan en
-Windows, incluido `integrity_check=ok`, versión v38, FK limpias para las bases
+Windows y Linux, incluido `integrity_check=ok`, versión v38, FK limpias para las bases
 sintéticas, secuencias sin colisión, rollback de filas no confirmadas y
 reutilización de puertos. Una expectativa invertida en R-05 hace fallar el
-arnés y aun así limpia procesos y sandbox.
+arnés y aun así limpia procesos y sandbox. #30 está cerrado.
 
 **Límite:** `taskkill`/`SIGKILL` simula la muerte del proceso, no un corte de
 alimentación. No prueba cachés del disco, corrupción, antivirus, pérdida del
-equipo, restore externo, hardware, LAN hostil ni operación real. Hasta que la
-PR pase Linux CI y se fusione, CORE-002 continúa `PARTIAL`; después seguirá sin
-ser evidencia `BENCH` o `PILOT` y R-011 permanecerá abierto.
+equipo, restore externo, hardware, LAN hostil ni operación real. CORE-002 está
+`DONE` solo para su aceptación de persistencia/reinicio a nivel `SIM`; no es
+evidencia `BENCH` o `PILOT` y R-011 permanece abierto.
 
 ## P1 — Portabilidad Windows mitigada; recuperación externa pendiente
 
@@ -124,7 +124,7 @@ administrativa ya está completada y la toolchain nativa pasa. Después apareci�
 la dependencia implícita de Bash en `postinstall`/`verify:electron` y
 `npm test`. PR #21 sustituyó esas rutas por scripts Node multiplataforma y se
 fusionó en `a51fa54`. La instalación limpia, rebuild, verificador, builds,
-upgrade fixture y, tras PR #28, los 66 scripts se repitieron desde `main` sin Bash; Linux y
+upgrade fixture y, tras PR #31, los 67 scripts se repitieron desde `main` sin Bash; Linux y
 Playwright también pasaron. #18 está cerrado y R-022 `DONE` para ese alcance.
 
 La ejecución histórica con Bash llegó a dos fallos de `test:reports-insights`
