@@ -25,8 +25,8 @@ and npm `10.9.3`. See [test results](../audit/test-results.md).
 | PRINT-002 | Kitchen/bar routing | `PARTIAL` | M1 | Items route to configured destinations | Automated station routing passes; no physical destination test |
 | PRINT-003 | Persistent print queue | `NOT_STARTED` | M1 | Pending job survives restart and cannot silently disappear | `print_logs` is an audit history, not a persistent queued-job state machine |
 | PRINT-004 | Duplicate-print protection | `PARTIAL` | M1 | Retry behaviour is explicit and logged | Reprint logging exists; physical print and audit calls are separate and no idempotent job ID was evidenced |
-| BACKUP-001 | Local backup creation | `PARTIAL` | M1 | Backup created, listed and integrity-checked | Automated disposable tests pass; no scheduled/off-device operational proof |
-| BACKUP-002 | Restore procedure | `PARTIAL` | M1 | Disposable install restores to expected state | Automated restore passes; no second-machine or second-person drill |
+| BACKUP-001 | Local and portable backup creation | `PARTIAL` | M1 | Production backup is integrity-checked, checksummed and exported off-device | #33 review branch produces an exact synthetic four-file package through `createBackup()` and rejects unexpected content; Windows producer plus artifact transfer still require CI review/merge |
+| BACKUP-002 | Restore procedure | `PARTIAL` | M1 | Clean install restores to expected state and a second operator can repeat it | Local independent-process restore, reopen, write-after-restore and B-01…B-07 pass on the review branch; cross-runner CI is pending and the physical second-person drill remains #34 |
 | DIAG-001 | System health overview | `NOT_STARTED` | M2 | Reports server, database, disk, network, backup and printer state | Basic API health exists but does not meet the acceptance summary |
 | DIAG-002 | Guided printer troubleshooting | `NOT_STARTED` | M2 | Detects common printer failures and proposes deterministic steps | No evidence |
 | DIAG-003 | Redacted diagnostic bundle | `NOT_STARTED` | M2 | Bundle excludes secrets and unnecessary customer data | No evidence |

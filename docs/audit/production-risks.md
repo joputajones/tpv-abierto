@@ -179,6 +179,21 @@ retención definida, monitor de antigüedad/éxito, prueba mensual de restauraci
 en otro equipo y procedimiento de recuperación documentado. Bloquear o degradar
 de forma visible si integridad/FK no son correctas.
 
+**Mitigación en revisión (#33):** el arnés crea un backup v38 sintético con la
+API real, lo saca del perfil productor, exige un paquete exacto con SHA-256 y
+restaura en un perfil limpio mediante la función real. B-01…B-07 bloquean
+corrupción, manifiesto/tamaño falsos, truncado, discrepancias de versión,
+metadatos inconsistentes y paquetes incompletos o con extras antes de dejar un
+destino parcial. El workflow propuesto transfiere el artifact desde Windows a
+consumidores Windows/Linux independientes; esa evidencia seguirá `PARTIAL`
+hasta pasar CI e integrarse.
+
+**Riesgo residual explícito:** CI no prueba USB/NAS, pérdida física, permisos
+del equipo real, restauración durante servicio, impresión, configuración fuera
+de SQLite ni capacidad de un empleado para seguir el runbook. El simulacro
+ciego de segunda persona permanece en #34. Por ello R-011 es `PARTIAL`, no
+`DONE`, y M0 continúa `IN_PROGRESS`.
+
 ## P2 — Fallback del puerto principal inconsistente
 
 **Hecho observado:** `main/server.ts` puede subir del 3001 a otro puerto, pero

@@ -9,11 +9,30 @@ summarised in `STATUS.md`.
 - `CODE`: automated unit or integration test.
 - `BUILD`: successful build or packaging output.
 - `SIM`: controlled simulation without physical restaurant hardware.
+- `CI_CROSS_RUNNER`: artifact transfer and validation between independent CI
+  runners; stronger portability evidence than one-host simulation, but not
+  physical hardware or human-operability evidence.
 - `BENCH`: test using representative physical hardware and LAN.
 - `PILOT`: observation in the real pilot restaurant.
 
 A critical capability should not be considered production-ready with `CODE`
 evidence alone.
+
+## Off-device recovery review record
+
+| Check | Review-branch status | Evidence and residual limit |
+|---|---|---|
+| Production backup API | `PARTIAL` | Synthetic v38 source is initialized through `main/db.ts` and exported through `createBackup()`; CI review is pending |
+| Exact portable package | `PARTIAL` | `flo-backup.db`, `manifest.json`, `SHA256SUMS` and `RESTORE-INSTRUCTIONS.md`; package rejects missing/extra/non-regular files |
+| Checksum before SQLite/destination | `PARTIAL` | Local B-01/B-02/B-03 prove non-zero rejection before destination creation; cross-runner evidence pending |
+| Independent restore and continuity | `PARTIAL` | Separate local processes restore with production `restoreBackup()`, reopen, advance order/bill sequences, write and reopen again |
+| Windows/Linux artifact transfer | `NOT_STARTED` | Dedicated SHA-pinned workflow is present on the review branch but has not yet produced accepted CI evidence |
+| Human blind drill | `NOT_STARTED` | Procedure and blank form are versioned; another person and physical machine remain issue #34 |
+
+This work does not close M0. Until the workflow is integrated, automated
+off-device recovery remains `PARTIAL`; after successful cross-runner merge it
+may become `DONE` only at `CI_CROSS_RUNNER`. R-011 remains `PARTIAL` because
+physical loss, representative hardware and the human drill are still absent.
 
 ## M0 evidence record
 

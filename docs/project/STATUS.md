@@ -70,7 +70,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | Integrated `main` creates and reopens a verified local premigration copy and retries the synthetic upgrade independently; no off-device restore drill or second-person procedure |
+| Backup and restore validation | `PARTIAL` | Issue [#33](https://github.com/joputajones/tpv-abierto/issues/33) adds a synthetic four-file package, checksum-first isolated restore and B-01…B-07 local evidence on its review branch. Cross-runner CI is pending merge/review; the separate physical second-person drill remains [#34](https://github.com/joputajones/tpv-abierto/issues/34) |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
@@ -132,8 +132,8 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 ## Immediate next actions
 
-1. Create an off-device backup and restore it into a disposable installation
-   on another machine, with checksums and a second-person runbook.
+1. Review the automated off-device package and Windows/Linux cross-runner
+   restore for #33, then run the independent physical second-person drill #34.
 2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 3. Run the M1 bench gate with representative printer hardware, two local
@@ -143,7 +143,9 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 - Dependency review is operational, but no branch protection or ruleset enforces
   it; a red check remains a manual governance blocker.
-- No off-device copy and restore on another machine has been demonstrated.
+- The review branch has local isolated off-device restore evidence, but the
+  cross-runner workflow is not integrated and the physical second-person drill
+  remains pending.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
   router-failure setup are unavailable.
 - Complete, reviewed and sanitised VirtuaPOS fixtures are unavailable.

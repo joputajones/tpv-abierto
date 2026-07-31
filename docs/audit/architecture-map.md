@@ -180,6 +180,32 @@ elegirse una ruta externa; solo las copias del directorio administrado aparecen
 en el historial. No se observó una política automática de retención local. La
 integración Google Drive sí aplica una retención configurable, 10 por defecto.
 
+### Paquete portable y frontera de recuperación
+
+El arnés de #33 usa las funciones de producción, no una reimplementación del
+backup: un worker empaquetado inicializa v38 en un `userData` temporal, inserta
+datos inequívocamente sintéticos y llama a `createBackup()` con un destino de
+exportación exterior al perfil. El paquete contiene exactamente
+`flo-backup.db`, `manifest.json`, `SHA256SUMS` y
+`RESTORE-INSTRUCTIONS.md`; no contiene WAL/SHM, logs ni el checkout.
+
+Un proceso consumidor distinto recibe solo esos cuatro archivos. Valida el
+inventario, tamaño y los dos hashes antes de abrir SQLite o crear el destino;
+después contrasta `integrity_check`, `user_version`, `_flo_meta`, claves
+foráneas y dataset. Solo entonces inicializa otro `userData`, ejecuta
+`restoreBackup(..., true)`, reabre, avanza secuencias y persiste una segunda
+operación. El workflow dedicado transporta el paquete exclusivamente mediante
+un artifact desde un productor Windows a consumidores Windows y Linux. Mientras
+la PR esté en revisión, esa evidencia cross-runner sigue pendiente.
+
+La base no es todo el perfil de FloCafe. Quedan fuera `master-pin.enc`,
+`google-drive-token.enc`, la sesión/directorio de WhatsApp y los logs de
+electron-log; los temporales de impresión pertenecen además al directorio
+temporal del sistema. Las imágenes de producto, en cambio, se guardan como
+Base64 dentro de SQLite y sí viajan con la base. Una restauración de `flo.db`
+no recupera automáticamente credenciales ni sesiones externas y el arranque
+limpio puede generar una identidad de dispositivo nueva.
+
 ## Migraciones SQLite
 
 El esquema usa `PRAGMA user_version` y contiene 38 migraciones. Cada migración

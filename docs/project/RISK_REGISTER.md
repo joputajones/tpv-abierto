@@ -21,7 +21,7 @@ and npm `10.9.3`. Technical evidence is in
 | R-008 | Rebranding or packaging violates licences or trademarks | 2 | 5 | 10 | MIT attribution preserved; no rebranding; third-party notices and packaged-binary review remain | Project owner / release | `PARTIAL` |
 | R-009 | Product is presented as Spanish fiscal-compliant before validation | 3 | 5 | 15 | Fiscal scope remains `OUT_OF_SCOPE` and documents prohibit a compliance claim | Product owner / M5 | `IN_PROGRESS` |
 | R-010 | VirtuaPOS data model cannot be fully reconstructed from available files | 3 | 4 | 12 | Acquire full source data outside Git; create only reviewed sanitised fixtures | Project owner / M3 | `BLOCKED` |
-| R-011 | Restaurant network or hardware failures are blamed on the software | 5 | 4 | 20 | PR #31 integrates local process restart/WAL recovery and port reuse at `SIM`. Physical power loss, off-device restore on another machine and representative hardware/LAN failure campaigns remain unavailable | Operations owner / M1 | `BLOCKED` |
+| R-011 | Restaurant network or hardware failures are blamed on the software | 5 | 4 | 20 | PR #31 integrates process restart/WAL recovery at `SIM`. Issue #33 review branch adds checksum-first portable backup and isolated restore automation; Windows/Linux cross-runner evidence is pending. Physical loss, second-person drill #34 and representative hardware/LAN campaigns remain unavailable | [joputajones / #33](https://github.com/joputajones/tpv-abierto/issues/33) / [#34](https://github.com/joputajones/tpv-abierto/issues/34) / M1 | `PARTIAL` |
 | R-012 | No recurring fee leaves human support economically unsustainable | 4 | 4 | 16 | Define installation/support boundaries and validate self-service diagnostics | Business owner / M2 | `NOT_STARTED` |
 | R-013 | AI support gives unsafe or invented repair instructions | 3 | 5 | 15 | Keep AI optional and restrict actions to audited deterministic procedures | Product owner / M2 | `NOT_STARTED` |
 | R-014 | Internet fallback design becomes more complex than the core product | 3 | 3 | 9 | Prioritise independent LAN; treat cellular/emergency AP as optional tested layers | Product owner / M2 | `NOT_STARTED` |
@@ -46,7 +46,7 @@ Any risk with priority 15 or greater must have:
 - a target milestone;
 - evidence before the affected milestone can exit.
 
-Named issues now govern R-005, R-006 and R-022. The M0 exit review is tracked
+Named issues now govern R-005, R-006, R-011 and R-022. The M0 exit review is tracked
 in issue #15; R-025 was technically mitigated through PR #24 and closed issue
 #19, while merge enforcement remains manual. Other priority-15+
 risks still require a named and assigned issue before their affected milestone
