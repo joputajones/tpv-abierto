@@ -18,21 +18,21 @@ summarised in `STATUS.md`.
 A critical capability should not be considered production-ready with `CODE`
 evidence alone.
 
-## Off-device recovery review record
+## Off-device recovery integrated record
 
-| Check | Review-branch status | Evidence and residual limit |
+| Check | Status | Evidence and residual limit |
 |---|---|---|
-| Production backup API | `PARTIAL` | Synthetic v38 source is initialized through `main/db.ts` and exported through `createBackup()`; CI review is pending |
-| Exact portable package | `PARTIAL` | `flo-backup.db`, `manifest.json`, `SHA256SUMS` and `RESTORE-INSTRUCTIONS.md`; package rejects missing/extra/non-regular files |
-| Checksum before SQLite/destination | `PARTIAL` | Local B-01/B-02/B-03 prove non-zero rejection before destination creation; cross-runner evidence pending |
-| Independent restore and continuity | `PARTIAL` | Separate local processes restore with production `restoreBackup()`, reopen, advance order/bill sequences, write and reopen again |
-| Windows/Linux artifact transfer | `NOT_STARTED` | Dedicated SHA-pinned workflow is present on the review branch but has not yet produced accepted CI evidence |
+| Production backup API | `DONE` | PR #35/#33: synthetic v38 source is initialized through `main/db.ts` and exported through `createBackup()` |
+| Exact portable package | `DONE` | `flo-backup.db`, `manifest.json`, `SHA256SUMS` and `RESTORE-INSTRUCTIONS.md`; package rejects missing/extra/non-regular files |
+| Checksum before SQLite/destination | `DONE` | Local B-01/B-02/B-03 and both consumers reject mismatch before SQLite access or destination creation |
+| Independent restore and continuity | `DONE` | Fresh jobs restore with production `restoreBackup()`, reopen, advance order/bill sequences, write and reopen again |
+| Windows/Linux artifact transfer | `DONE` | Run 30671201413: Windows producer and independent Windows/Linux consumers share database SHA-256 `d2c4ee11…c1da95`; evidence `CI_CROSS_RUNNER` |
 | Human blind drill | `NOT_STARTED` | Procedure and blank form are versioned; another person and physical machine remain issue #34 |
 
-This work does not close M0. Until the workflow is integrated, automated
-off-device recovery remains `PARTIAL`; after successful cross-runner merge it
-may become `DONE` only at `CI_CROSS_RUNNER`. R-011 remains `PARTIAL` because
-physical loss, representative hardware and the human drill are still absent.
+PR #35 closes only the automated scope in #33. It does not close M0. Portable
+backup and automated independent-runner restore are `DONE` only at
+`CI_CROSS_RUNNER`; R-011 remains `PARTIAL` because physical loss,
+representative hardware and the human drill are still absent.
 
 ## M0 evidence record
 
@@ -85,7 +85,7 @@ install, matrix, upgrade, backup, both builds and all 67 scripts without Bash.
 | T-BLD-002 | Main TypeScript build | `BUILD` | `DONE` | Integrated `main` TypeScript build passes locally and in Linux CI |
 | T-BLD-003 | Frontend static build | `BUILD` | `DONE` | Integrated `main` exports 22 routes locally and in CI; tooling advisories remain tracked separately |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 67 scripts without Bash on Windows and passes the Linux core suite; #16, #18, #20 and #30 are closed |
+| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 68 scripts without Bash in the full Windows/Linux/macOS matrix; #16, #18, #20, #30 and automated recovery #33 are closed |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `DONE` | Integrated `main` blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification |
 
 ## Controlled restart recovery — issue #30 / PR #31

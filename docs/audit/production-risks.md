@@ -16,10 +16,10 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Reinicio graceful/abrupto sin matriz | CORE-002 / [#30](https://github.com/joputajones/tpv-abierto/issues/30) | `DONE` | PR #31 integra R-01…R-12 en Windows/Linux con datos y procesos temporales; #30 está cerrado. El alcance es `SIM` |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 67 scripts repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-011 |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 68 scripts repetidos desde `main` sin Bash. El restore automatizado cross-runner está integrado; desastre físico sigue en R-011 |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
-| Backups frente a desastre | R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro. El cierre de R-005 no acredita desastre |
+| Backups frente a desastre | R-011 | `PARTIAL` | PR #35 acredita copia por artifact y restore Windows/Linux a nivel `CI_CROSS_RUNNER`; faltan medio/equipo físico y simulacro humano. El cierre de R-005 no acredita desastre |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
 | Telemetría antes de consentimiento | R-020 | `NOT_STARTED` | Confirmado por defaults/orden de arranque; sin captura HTTPS |
 | Operación offline | R-011 / CORE-004 | `UNVERIFIED` | Backend local funciona; Electron completo no fue aislado |
@@ -179,14 +179,16 @@ retención definida, monitor de antigüedad/éxito, prueba mensual de restauraci
 en otro equipo y procedimiento de recuperación documentado. Bloquear o degradar
 de forma visible si integridad/FK no son correctas.
 
-**Mitigación en revisión (#33):** el arnés crea un backup v38 sintético con la
+**Mitigación automatizada integrada (#33 / PR #35):** el arnés crea un backup
+v38 sintético con la
 API real, lo saca del perfil productor, exige un paquete exacto con SHA-256 y
 restaura en un perfil limpio mediante la función real. B-01…B-07 bloquean
 corrupción, manifiesto/tamaño falsos, truncado, discrepancias de versión,
 metadatos inconsistentes y paquetes incompletos o con extras antes de dejar un
-destino parcial. El workflow propuesto transfiere el artifact desde Windows a
-consumidores Windows/Linux independientes; esa evidencia seguirá `PARTIAL`
-hasta pasar CI e integrarse.
+destino parcial. El workflow integrado transfirió el artifact desde Windows a
+consumidores Windows/Linux independientes en el run 30671201413; los tres jobs
+observaron el SHA-256 de base `d2c4ee11…c1da95`, restauraron y continuaron
+escribiendo. Esta mitigación concreta es `DONE` a nivel `CI_CROSS_RUNNER`.
 
 **Riesgo residual explícito:** CI no prueba USB/NAS, pérdida física, permisos
 del equipo real, restauración durante servicio, impresión, configuración fuera
