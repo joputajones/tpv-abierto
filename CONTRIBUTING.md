@@ -66,6 +66,11 @@ try {
 
 Do not use `setx` solely for this workaround.
 
+PR #21 contains a cross-platform Node-based replacement and evidence that these
+commands pass in ordinary PowerShell without Bash. Until that PR is reviewed and
+merged, the instructions above remain the behaviour and workaround for current
+`main`; do not treat the pending branch as an installed prerequisite change.
+
 ### macOS Gatekeeper & the Electron dev binary
 
 Electron 43 removed the old automatic postinstall download (a supply-chain

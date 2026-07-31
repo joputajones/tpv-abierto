@@ -32,10 +32,10 @@ and npm `10.9.3`. Technical evidence is in
 | R-019 | LAN API/KDS traffic is plaintext and Electron sandboxing is reduced | 4 | 5 | 20 | JWT, roles, CSP, context isolation and URL allowlist exist; no TLS and both servers bind all interfaces | Security owner / M1 | `PARTIAL` |
 | R-020 | First-run telemetry may start before affirmative consent | 3 | 4 | 12 | Existing-install migration defaults differ, but fresh defaults/start order remain contradictory | Privacy owner / M1 | `NOT_STARTED` |
 | R-021 | Main-server port fallback can advertise/open a different port than the active listener | 3 | 4 | 12 | KDS reports its active port; main window/mDNS still use configured `PORT` | Technical owner / M1 | `NOT_STARTED` |
-| R-022 | Windows installation and recovery are not reproducible | 4 | 5 | 20 | SDK/MSVC repair is complete and native rebuild passes; literal install/test commands still depend on Bash outside normal `PATH` | [joputajones / #18](https://github.com/joputajones/tpv-abierto/issues/18) / M0 | `BLOCKED` |
+| R-022 | Windows installation and recovery are not reproducible | 4 | 5 | 20 | SDK/MSVC repair and native rebuild are complete; current `main` still depends on Bash, while PR #21 demonstrates cross-platform install/test paths and awaits review/merge | [joputajones / #18](https://github.com/joputajones/tpv-abierto/issues/18) / M0 | `PARTIAL` |
 | R-023 | A fork build can update from upstream or ship unsigned on Windows | 4 | 4 | 16 | Updates prompt before download, but direct builds point to `FreeOpenSourcePOS/FloCafe`; Windows signing/package path not tested | Release owner / before distribution | `UNVERIFIED` |
 | R-024 | Dependency advisories or copyleft/notice obligations are missed in distributed binaries | 3 | 4 | 12 | npm audits and lockfile licence inventory recorded; no SBOM or `THIRD_PARTY_NOTICES` | Release owner / before distribution | `PARTIAL` |
-| R-025 | CI reports a permanent dependency-review failure instead of a meaningful dependency signal | 4 | 3 | 12 | PR #14 confirms the action is unsupported by current repository configuration; application invariant job passes | [joputajones / #19](https://github.com/joputajones/tpv-abierto/issues/19) / M0 | `BLOCKED` |
+| R-025 | CI reports a permanent dependency-review failure instead of a meaningful dependency signal | 4 | 3 | 12 | `DONE` 2026-07-31: Dependency Graph enabled; the SHA-pinned v4.5.0 action passed a docs PR and evaluated a controlled lockfile change; PR #24 merged and #19 closed. No ruleset enforces the check, so a red result remains a manual blocker | [joputajones / #19](https://github.com/joputajones/tpv-abierto/issues/19) / M0 | `DONE` |
 
 ## Escalation rule
 
@@ -47,7 +47,8 @@ Any risk with priority 15 or greater must have:
 - evidence before the affected milestone can exit.
 
 Named issues now govern R-005, R-006 and R-022. The M0 exit review is tracked
-in issue #15 and the CI configuration gap in issue #19. Other priority-15+
+in issue #15; R-025 was technically mitigated through PR #24 and closed issue
+#19, while merge enforcement remains manual. Other priority-15+
 risks still require a named and assigned issue before their affected milestone
 can exit.
 

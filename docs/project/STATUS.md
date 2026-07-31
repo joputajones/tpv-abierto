@@ -12,16 +12,25 @@ The pre-existing audit commit `c9110f4` has been preserved and reconciled with
 the project-tracking documents introduced by PR #13. The runtime evidence was
 rechecked on Windows at merge commit
 `d366538fe1a5d798d5f6c6249b365e306e38efbc` with Node `v22.20.0` and npm
-`10.9.3`.
+`10.9.3`. The documentation was reconciled again after PR #24 entered `main` at
+merge commit `38abca3f0d149c6d245adc0a19705c828b1d70aa`.
 
 After the owner repaired Visual Studio Build Tools and the Windows SDK, the
 native rebuild, TypeScript build, frontend static export and database
-upgrade-path test pass. The literal root `npm ci` still fails because its
-postinstall verifier invokes Bash outside the normal `PATH`; with a temporary
-Git Bash path the install passes. The root suite then stops at two reproducible
-`test:reports-insights` failures tracked in issue #20. A synthetic order survived a controlled process termination and restart
-through the recommended standalone development server, but a graceful Electron
-shutdown and abrupt-power-loss cycle have not both been demonstrated.
+upgrade-path test pass. The current `main` still requires Bash for the root
+postinstall verifier and test aggregator. PR #21 replaces those mandatory paths
+with cross-platform Node scripts and has Windows/Linux evidence, but remains
+unmerged, so issue #18 and R-022 are `PARTIAL`, not `DONE`.
+
+The historical root suite stopped at two reproducible `test:reports-insights`
+failures (29/31). PR #22 demonstrates that a `Date.now()`-dependent fixture,
+not the production endpoint, caused both values and makes the test deterministic;
+it also remains unmerged, so issue #20 is still open and `PARTIAL`. Dependency
+Graph is now enabled, dependency review is operational, PR #24 is merged and
+issue #19 is closed. A synthetic order survived a controlled process termination
+and restart through the recommended standalone development server, but a
+graceful Electron shutdown and abrupt-power-loss cycle have not both been
+demonstrated.
 
 These results improve confidence in the code baseline; they do not establish
 production readiness, Spanish fiscal compliance or suitability for a real
@@ -40,8 +49,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
 | Upstream remote configured locally | `PARTIAL` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence is in unmerged PR #14 |
 | Development environment recorded | `PARTIAL` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence is in unmerged PR #14 |
-| Clean dependency installation | `BLOCKED` | Native rebuild passes after SDK repair, but literal `npm.cmd ci` exits 1 because `postinstall` cannot find Bash; temporary `PATH` workaround passes |
-| Baseline test suite | `PARTIAL` | With Git Bash temporary, the chain stops at `test:reports-insights` (29/31, exit 1); tracked in issue #20 |
+| Clean dependency installation | `PARTIAL` | Native rebuild passes after SDK repair; current `main` still needs Bash, while PR #21 demonstrates a cross-platform replacement and remains pending review/merge (#18) |
+| Baseline test suite | `PARTIAL` | Historical `main` evidence stops at `test:reports-insights` (29/31); PR #22 fixes the deterministic test fixture and is green on Windows/Linux but is not merged (#20) |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
 | Main TypeScript build | `PARTIAL` | `npm.cmd run build` passes; evidence is in the unmerged audit PR |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
@@ -53,7 +62,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Backup and restore validation | `PARTIAL` | Automated disposable backup/restore and migration backup paths pass; no off-device restore drill or second-person procedure |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
 | Architecture and production risks | `PARTIAL` | Reconciled under `docs/audit/` and this tracking set; PR #14 is not merged |
-| PR #14 governance evidence | `PARTIAL` | Draft, open and unmerged; CI is red only because unsupported `dependency-review` fails (issue #19) |
+| Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
+| PR #14 governance evidence | `PARTIAL` | Open and unmerged; this documentation establishes the review baseline but does not close M0 |
 | VirtuaPOS catalogue analysis | `PARTIAL` | Initial analysis exists outside the public repository; no reviewed sanitised fixture is committed |
 | Full `C:\BLATTA` acquisition | `BLOCKED` | Requires another restaurant visit; raw contents must remain outside the public repository |
 | VirtuaPOS importer | `NOT_STARTED` | Cannot be considered implemented |
@@ -91,36 +101,41 @@ Exit criteria:
 - [ ] Baseline architecture and production risks documented in PR #14, pending
       review and merge.
 
-M0 remains `IN_PROGRESS`: a fresh root installation is blocked, the final
-evidence PR is not merged, and clean/abrupt restart behaviour still needs a
-complete controlled matrix.
+M0 remains `IN_PROGRESS`: the cross-platform install/test runner and deterministic
+reports fixture exist only in unmerged PRs #21 and #22, the final evidence PR is
+not merged, issue #16 remains open, and clean/abrupt restart behaviour still
+needs a complete controlled matrix.
 
 ## Immediate next actions
 
-1. Make the postinstall verifier and test runner cross-platform, or formally
-   retain Git Bash as a prerequisite, under
-   [#18](https://github.com/joputajones/tpv-abierto/issues/18).
-2. Resolve the reporting regression in
-   [#20](https://github.com/joputajones/tpv-abierto/issues/20), then reproduce
-   the complete suite from the clean installation.
+1. Review and integrate the cross-platform runner in
+   [PR #21](https://github.com/joputajones/tpv-abierto/pull/21), then close
+   [#18](https://github.com/joputajones/tpv-abierto/issues/18) through its merge.
+2. Review and integrate the deterministic reports fixture in
+   [PR #22](https://github.com/joputajones/tpv-abierto/pull/22), then close
+   [#20](https://github.com/joputajones/tpv-abierto/issues/20) and reproduce the
+   complete suite from the updated clean installation.
 3. Resolve the fail-closed decision in
    [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
-   premigration backups without editing released migrations.
+   existing databases before migration without editing released migrations. A
+   new empty database may be considered only through an explicit, deterministic
+   condition, never file size or a probabilistic heuristic.
 4. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 5. Run the M1 bench gate with representative printer hardware, two local
    clients, KDS and Internet/LAN failure scenarios.
-6. Restore a meaningful dependency-review CI signal through
-   [#19](https://github.com/joputajones/tpv-abierto/issues/19), outside PR #14.
 
 ## Blockers
 
-- Build Tools/MSVC/SDK are now complete, but the documented literal `npm ci`
-  remains blocked by the Bash-dependent postinstall path (issue #18).
-- `test:reports-insights` fails two assertions and prevents the root suite from
-  reaching its remaining scripts (issue #20).
-- CI remains red because `dependency-review` is unsupported with the current
-  repository configuration; tracked separately in issue #19.
+- Build Tools/MSVC/SDK are complete. Current `main` still has the Bash-dependent
+  postinstall/test path; PR #21 contains the technical candidate but is
+  not integrated (#18).
+- Historical `main` evidence has two `test:reports-insights` assertion failures;
+  PR #22 contains the deterministic test correction but is not integrated (#20).
+- Premigration backup failure is not fail-closed for an existing database
+  (issue #16).
+- Dependency review is operational, but no branch protection or ruleset enforces
+  it; a red check remains a manual governance blocker.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
   router-failure setup are unavailable.
 - Complete, reviewed and sanitised VirtuaPOS fixtures are unavailable.

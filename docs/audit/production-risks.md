@@ -15,8 +15,8 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `BLOCKED` | SDK/MSVC reparados; `npm ci` literal sigue fallando porque `postinstall` requiere Bash fuera de `PATH` |
-| Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `BLOCKED` | El action falla por capacidad/configuración del repositorio |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `PARTIAL` | SDK/MSVC reparados; `main` aún requiere Bash, pero PR #21 demuestra una sustitución multiplataforma pendiente de merge |
+| Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
 | Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
@@ -68,9 +68,12 @@ expectativa de seguridad del README.
 
 **Acción recomendada:** hacer que el backup previo sea fail-closed para una base
 existente, verificar legibilidad/integridad de la copia, probar disco lleno y
-permisos, y ensayar una base real anonimizada desde cada versión relevante. No
-editar migraciones ya publicadas; añadir protección alrededor del lote. La
-decisión humana pendiente y sus criterios están en el
+permisos, y ensayar una base representativa y saneada desde cada versión
+relevante. No editar migraciones ya publicadas; añadir protección alrededor del
+lote. Una base nueva y vacía puede estudiarse como excepción únicamente si la
+condición es explícita y determinista; no debe inferirse por tamaño de archivo
+ni por una heurística probabilística. La decisión humana pendiente y sus
+criterios están en el
 [issue #16](https://github.com/joputajones/tpv-abierto/issues/16).
 
 ## P1 — API LAN sin cifrado y sandbox reducido
@@ -97,24 +100,32 @@ de emparejado seguro antes de despliegues no controlados.
 ## P1 — Instalación no reproducible en Windows auditado
 
 **Hecho observado:** inicialmente `npm install` fallaba al reconstruir
-`better-sqlite3` por una instalación incompleta de Build Tools/SDK. Tras la
-reparación administrativa, el rebuild nativo pasa. El comando literal sigue
-fallando después porque `postinstall` ejecuta `verify:electron` mediante Bash y
-Git Bash está fuera de `PATH`; `npm test` tiene la misma dependencia. Con Bash
-temporal, la instalación pasa y la suite llega a dos fallos de
-`test:reports-insights` (#20). El script `npm run clean` tampoco detuvo el
-Electron observado en la auditoría inicial.
+`better-sqlite3` por una instalación incompleta de Build Tools/SDK. La reparación
+administrativa ya está completada y la toolchain nativa pasa; la falta de SDK no
+es el bloqueo actual. Después apareció la dependencia implícita de Bash en
+`postinstall`/`verify:electron` y `npm test`. PR #21 sustituye esas rutas por
+scripts Node multiplataforma y demuestra instalación/verificación sin Bash en
+PowerShell, además de validación Linux. Sigue sin fusionar, por lo que `main` aún
+conserva el requisito y #18 continúa abierto con estado `PARTIAL`.
+
+La ejecución histórica con Bash llegó a dos fallos de `test:reports-insights`
+(#20). PR #22 demuestra que la fixture dependía de `Date.now()`: la ventana de
+90 días comenzaba el 2 de mayo de 2026 y excluía la orden del 1 de mayo, causando
+exactamente promedio 20 e ingresos 500. La corrección fija/restaura el reloj en
+el test y no cambia la semántica de producción; también espera revisión y merge.
+El script `npm run clean` tampoco detuvo el Electron observado en la auditoría
+inicial.
 
 **Por qué importa:** onboarding de colaboradores, CI de Windows, recuperación
 urgente y builds de release pueden depender de estado previo de `node_modules`
 o de herramientas no documentadas. Un TPV necesita una recuperación
 determinista.
 
-**Acción recomendada:** documentar y automatizar prerrequisitos exactos
-(Node 22, Git Bash o runner multiplataforma, VS Build Tools/Windows SDK),
-verificar una instalación limpia con `npm ci` y corregir la identificación del
-proceso de `kill-ports.js`. La reparación manual con privilegios y la secuencia
-de validación están asignadas en el
+**Acción recomendada:** revisar e integrar PR #21, actualizarla sobre el `main`
+vigente si es necesario y repetir una instalación limpia sin Bash desde la rama
+principal resultante. Después, integrar PR #22 y repetir la suite completa.
+Conservar documentados Node 22 y VS Build Tools/Windows SDK; corregir también la
+identificación del proceso de `kill-ports.js`. La trazabilidad permanece en el
 [issue #18](https://github.com/joputajones/tpv-abierto/issues/18).
 
 ## P1 — Impresión sin validación de hardware objetivo
@@ -225,6 +236,18 @@ componentes tienen obligaciones adicionales. No hay SBOM/THIRD_PARTY_NOTICES.
 **Acción recomendada:** actualización controlada de tooling, SBOM por release,
 escaneo de licencias y vulnerabilidades en CI, y revisión jurídica del binario
 distribuido. Mantener íntegra la licencia MIT del proyecto.
+
+## P2 — Dependency review operativo sin enforcement de merge
+
+**Hecho observado:** Dependency Graph está habilitado y la acción v4.5.0 fijada
+por SHA se ejecuta con permisos de solo lectura, umbral `high`, sin
+`continue-on-error` ni `warn-only`. Una PR documental pasó y una PR desechable
+analizó un cambio controlado de lockfile; esta última se cerró sin merge. PR #24
+está fusionada y #19 cerrado, por lo que R-025 está técnicamente mitigado.
+
+**Riesgo residual:** `main` no tiene branch protection ni ruleset. GitHub no
+impide un merge directo o con CI rojo; el equipo debe tratar manualmente un
+`dependency-review` rojo como bloqueo hasta que exista enforcement aprobado.
 
 ## P3 — Deriva documental y observabilidad
 

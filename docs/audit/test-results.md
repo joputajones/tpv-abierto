@@ -11,7 +11,24 @@ el propietario reparase manualmente Build Tools y el SDK, se ejecutó la
 validación posterior documentada a continuación. Los resultados históricos se
 conservan debajo y se distinguen de esta nueva ejecución.
 
-### Validación posterior a la reparación administrativa
+### Reconciliación posterior a PR #24
+
+Esta actualización documental no repite instalación, build, suite, servidor ni
+Playwright. Conserva los resultados ejecutados en sus ramas de origen y separa
+la evidencia histórica del estado integrado en `main`.
+
+| Elemento | Estado observado inicialmente | Causa raíz | Corrección / acción | Estado actual en `main` | Evidencia en PR | Limitación restante |
+| --- | --- | --- | --- | --- | --- | --- |
+| #18 / R-022 | Toolchain incompleta; después, `npm ci` fallaba al no encontrar Bash | SDK inicial ausente, ya reparado; scripts obligatorios dependían de Bash | PR #21 usa scripts Node multiplataforma | `PARTIAL`; #18 abierto y Bash aún requerido | Windows: `npm ci` y `verify:electron` sin Bash; runner llega a pruebas reales. Linux valida los scripts | PR #21 sigue sin fusionar y parte de un `main` anterior |
+| #19 / R-025 | `dependency-review` fallaba como no soportado antes del análisis | Dependency Graph deshabilitado | Se habilitó; PR #24 documentó y fusionó la política | `DONE`; #19 cerrado | Acción v4.5.0 fijada por SHA, permisos de lectura, umbral `high`; PR documental y cambio controlado de lockfile | Sin branch protection/ruleset; bloqueo de merge manual |
+| #20 | `test:reports-insights` 29/31; promedio 20 e ingresos 500 | `Date.now()` movía el inicio inclusivo de 90 días al 2 de mayo de 2026 y excluía la orden del 1 de mayo | PR #22 fija el reloj durante la petición y lo restaura en `try/finally` | `PARTIAL`; #20 abierto y fixture actual sin integrar | Test aislado 31/31; suite completa verde en Windows/Linux; límite, orden anterior y cancelación cubiertos | PR #22 sigue sin fusionar y parte de un `main` anterior |
+
+La evidencia de #20 explica exactamente los dos valores históricos y no señala
+una regresión del endpoint de producción. Las afirmaciones de Windows/Linux son
+resultados registrados por las PR #21/#22; no se presentan como pruebas
+repetidas durante esta reconciliación documental.
+
+### Validación histórica posterior a la reparación administrativa
 
 Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
 `canceled=0`. `vswhere` detecta MSVC x86/x64 y el componente de SDK instalado;
@@ -36,7 +53,7 @@ mostraba los dos fallos y la repetición aislada confirmó código 1. Por tanto,
 se presenta aquella envoltura como suite correcta. No quedaron listeners en
 3001/3002 ni cambios rastreados tras las pruebas.
 
-### Estado real de CI
+### Estado inicial de CI, antes de habilitar Dependency Graph
 
 Se inspeccionó el workflow finalizado `30587223544`, asociado al commit
 `892f2c70d6fd0cbf8998a7bd127ffe77ce4ba935`.
@@ -49,13 +66,35 @@ Se inspeccionó el workflow finalizado `30587223544`, asociado al commit
 | `linux-baseline` | Omitido | Omitido por el filtro de rutas de una PR solo documental |
 | `e2e-playwright` | Omitido | Omitido por el filtro de rutas de una PR solo documental |
 
-El estado rojo no demuestra un fallo del código de aplicación ni de la
-documentación: el action de revisión de dependencias termina antes de evaluar
-el cambio porque la función requerida no está disponible. La corrección del
-workflow o de la configuración queda separada en el
-[issue #19](https://github.com/joputajones/tpv-abierto/issues/19); no se modificó
-`.github/workflows/ci.yml` en esta PR. Los logs también advierten que algunas
-acciones fijadas a Node 20 son forzadas a Node 24; el aviso no causó este fallo.
+Este bloque conserva el primer resultado rojo: no demuestra un fallo del código
+de aplicación ni de la documentación. Después se habilitó Dependency Graph y
+la misma acción pasó sin cambios de workflow. PR #24 incorporó la política a
+`main` y cerró el
+[issue #19](https://github.com/joputajones/tpv-abierto/issues/19). Los logs
+también advirtieron que algunas acciones fijadas a Node 20 eran forzadas a Node
+24; el aviso no causó aquel fallo.
+
+### Evidencia vigente de dependency review
+
+- La acción `actions/dependency-review-action` v4.5.0 está fijada por SHA y usa
+  permisos `contents: read` y `pull-requests: read`.
+- La política falla desde severidad `high`; no usa `continue-on-error` ni
+  `warn-only`.
+- La repetición de la PR documental #14 pasó y conservó Linux/Playwright como
+  omisiones explícitas por filtrado de rutas.
+- La PR #22 pasó el job al repetirlo tras habilitar Dependency Graph, sin cambio
+  de código o workflow para esa repetición.
+- La PR desechable #23 modificó de forma controlada `package-lock.json`; la
+  acción reconoció el cambio real, aplicó el umbral y terminó correctamente. La
+  PR se cerró sin merge y su rama se eliminó.
+- El inventario reconoció manifiestos y lockfiles de raíz y `frontend/`.
+- PR #24 quedó fusionada en
+  `38abca3f0d149c6d245adc0a19705c828b1d70aa` y #19 cerrado.
+
+Esto demuestra ejecución y análisis real conforme a la política configurada;
+no demuestra un test negativo con una vulnerabilidad deliberada. Tampoco hay
+branch protection o ruleset: GitHub aún permite técnicamente un merge directo o
+con CI rojo.
 
 ### Diagnóstico inicial del entorno Windows, antes de la reparación
 
@@ -78,10 +117,11 @@ conserva selecciones para C++ y SDK 19041, pero los archivos reales del SDK no
 están instalados. Por tanto, no debe confundirse una selección incompleta con
 un prerrequisito disponible ni prescribirse 19041 como versión obligatoria.
 
-La acción manual asignada al propietario en el
+La acción manual de toolchain asignada al propietario dentro del
 [issue #18](https://github.com/joputajones/tpv-abierto/issues/18) se completó:
-Build Tools y el SDK quedaron instalados. Codex no instaló componentes, no
-cambió el registro y no persistió variables de entorno.
+Build Tools y el SDK quedaron instalados. El issue permanece abierto hasta que
+la solución multiplataforma de PR #21 se revise y fusione. Codex no instaló
+componentes, no cambió el registro y no persistió variables de entorno.
 
 Tras la reparación, ejecutar desde un Developer PowerShell o Developer Command
 Prompt:
