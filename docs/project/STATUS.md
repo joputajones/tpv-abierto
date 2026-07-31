@@ -19,9 +19,10 @@ After the owner repaired Visual Studio Build Tools and the Windows SDK, the
 native rebuild, TypeScript build, frontend static export and database
 upgrade-path test pass. The current `main` still requires Bash for the root
 postinstall verifier and test aggregator. PR #21 has integrated current `main`
-and replaces those mandatory paths with cross-platform Node scripts, but its
-post-merge CI and merge are still pending, so issue #18 and R-022 remain
-`PARTIAL`, not `DONE`.
+and replaces those mandatory paths with cross-platform Node scripts. The
+updated Windows acceptance path and all 65 test scripts pass without Bash, but
+CI and merge are still pending, so issue #18 and R-022 remain `PARTIAL`, not
+`DONE`.
 
 The historical root suite stopped at two reproducible `test:reports-insights`
 failures (29/31). PR #22 proved that a `Date.now()`-dependent fixture, not the
@@ -49,8 +50,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
-| Clean dependency installation | `PARTIAL` | Native rebuild passes after SDK repair; current `main` still needs Bash, while PR #21 demonstrates a cross-platform replacement and remains pending review/merge (#18) |
-| Baseline test suite | `PARTIAL` | PR #22 and #20 are complete; PR #21 contains the Bash-free runner after integrating current `main`, but the updated full-suite run, CI and merge remain pending |
+| Clean dependency installation | `PARTIAL` | After integrating current `main`, PR #21 runs `npm.cmd ci`, native rebuild and Electron verification without Bash; CI and merge remain pending (#18) |
+| Baseline test suite | `PARTIAL` | PR #22 and #20 are complete; PR #21 passes all 65 scripts without Bash and proves fail-fast error propagation, but CI and merge remain pending |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
@@ -116,9 +117,8 @@ those gaps.
 
 ## Blockers
 
-- Build Tools/MSVC/SDK are complete. Current `main` still has the Bash-dependent
-  postinstall/test path; PR #21 contains the technical candidate but is
-  not integrated (#18).
+- Build Tools/MSVC/SDK and the updated Bash-free Windows validation are complete.
+  Current `main` still has the old paths until PR #21 passes CI and merges (#18).
 - Premigration backup failure is not fail-closed for an existing database
   (issue #16).
 - Dependency review is operational, but no branch protection or ruleset enforces
