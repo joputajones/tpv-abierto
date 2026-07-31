@@ -59,9 +59,9 @@ ni al runtime.
 | API y KDS escuchan en todas las interfaces en 3001/3002 | Confirmado mediante prueba ejecutada | `node dev-server.js`, listeners `0.0.0.0:3001` y `0.0.0.0:3002`, salud y HTML 200 | No se ensayó una LAN hostil ni TLS |
 | Flags cloud de pedidos/informes no protegen todos los caminos de datos | Confirmado mediante código | `recordOrderChanged()`, `runCommand()` y `decorateOrder()` no aplican ambos flags; la instantánea incluye cliente/factura/pago | No se registró una cuenta cloud ni tráfico real |
 | Una migración puede continuar si falla la copia previa | Confirmado mediante prueba ejecutada | La suite provoca `Auto-backup before migration failed` y continúa; v10/v14/v30 contienen operaciones destructivas históricas | La fixture feliz v0→v38 sí conserva los datos cubiertos |
-| La instalación raíz es reproducible en el Windows auditado | Contradicho por la evidencia | `npm.cmd ci` termina con código 1: toolset v142 presente, Windows SDK ausente | `npm.cmd ci --ignore-scripts` solo permite diagnóstico |
-| La suite se ejecuta con el comando literal documentado | Contradicho por la evidencia | `npm.cmd test` no encuentra `bash`; la cadena pasa al añadir Git Bash temporalmente a `PATH` | El workaround no resuelve una instalación limpia |
-| Builds y suite automatizada son funcionales en el árbol disponible | Confirmado mediante prueba ejecutada | TypeScript, export de 22 rutas, v0→v38 y la cadena completa pasan | No hay métrica de cobertura ni E2E Playwright ejecutado |
+| La instalación raíz es reproducible en el Windows auditado | Contradicho por la evidencia | Tras reparar SDK/MSVC, el rebuild nativo pasa; el comando literal `npm.cmd ci` falla después porque `verify:electron` no encuentra `bash` | Con Git Bash temporal en `PATH`, `npm.cmd ci` pasa |
+| La suite se ejecuta con el comando literal documentado | Contradicho por la evidencia | `npm.cmd test` no encuentra `bash`; con Bash temporal llega a `test:reports-insights` y falla 2 aserciones | Issue #20; no se ejecuta la cola posterior de scripts |
+| Builds y suite automatizada son funcionales en el árbol disponible | Confirmado parcialmente | TypeScript, export de 22 rutas y v0→v38 pasan tras instalación limpia con workaround | La suite completa no está verde; sin métrica de cobertura ni E2E local |
 | Un pedido persiste tras reiniciar el backend | Confirmado parcialmente | Pedido sintético creado por API, proceso detenido, servidor reiniciado, login y lectura del mismo pedido correctos | El cierre no dejó evidencia de apagado graceful; no se probó corte eléctrico |
 | Impresión está lista para hardware de restaurante | Bloqueado por hardware o información externa | Tests de bytes/perfiles/API simulada pasan | Sin impresora, spooler, cajón, papel, USB/TCP ni cola persistente |
 | Copia y restauración están listas para desastre real | Confirmado parcialmente | Tests desechables y copia premigración feliz pasan | Sin copia fuera del equipo, retención local automática ni simulacro en otra máquina |
@@ -146,7 +146,7 @@ la auditoría se ejecutó aún el 2026-07-29 en Europe/Madrid.
 La rama local `audit/baseline` se creó desde el commit base. No se ha publicado
 ni se ha abierto pull request.
 
-## Entorno observado
+## Entorno observado en la auditoría inicial
 
 | Componente | Valor |
 | --- | --- |
@@ -165,10 +165,17 @@ compilación nativa de `better-sqlite3`: `npm install` no puede completar
 `electron-builder install-app-deps` sin un Windows SDK compatible. Además, el
 script principal de pruebas presupone que `bash` está disponible en `PATH`.
 
+Este bloque conserva el estado histórico. El 2026-07-31 el propietario reparó
+Build Tools/SDK y el rebuild nativo pasó. El bloqueo actual del comando literal
+es el uso de Bash en `postinstall`; la evidencia vigente está en
+[test-results.md](test-results.md).
+
 ## Resultado ejecutivo
 
-El núcleo compila y la suite automatizada es amplia. La actualización de una
-base desde esquema 0 hasta el esquema actual 38 pasa, conserva los datos de la
+El núcleo compila y la suite automatizada es amplia, pero la repetición tras
+reparar la toolchain encuentra dos fallos en `test:reports-insights`. La
+actualización de una base desde esquema 0 hasta el esquema actual 38 pasa,
+conserva los datos de la
 fixture, no deja diferencias de esquema y es idempotente. La aplicación
 Electron también arranca, responde a salud y sirve tanto el POS como el KDS.
 

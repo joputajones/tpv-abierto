@@ -5,15 +5,41 @@
 Fecha: 2026-07-31. Rama: `audit/m0-reconcile`. PR:
 [joputajones/tpv-abierto#14](https://github.com/joputajones/tpv-abierto/pull/14).
 
-Este trabajo de preparación solo ejecutó comprobaciones de Git, diagnóstico de
-entorno, consulta de GitHub Actions y validaciones documentales. No se volvió a
-ejecutar la suite local, los builds ni el servidor de desarrollo. Sus resultados
-históricos se conservan debajo sin presentarlos como una repetición actual.
+La preparación inicial solo ejecutó comprobaciones de Git, diagnóstico de
+entorno, consulta de GitHub Actions y validaciones documentales. Después de que
+el propietario reparase manualmente Build Tools y el SDK, se ejecutó la
+validación posterior documentada a continuación. Los resultados históricos se
+conservan debajo y se distinguen de esta nueva ejecución.
+
+### Validación posterior a la reparación administrativa
+
+Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
+`canceled=0`. `vswhere` detecta MSVC x86/x64 y el componente de SDK instalado;
+`Windows.h`, `kernel32.lib`, `rc.exe` y `mt.exe` existen bajo el SDK
+`10.0.19041.0`. No se deduce de ello que esa versión concreta sea una exigencia
+del proyecto.
+
+| Comando exacto | Resultado | Evidencia / limitación |
+| --- | --- | --- |
+| `npm.cmd ci` | Fallo, código 1 | `better-sqlite3` se reconstruye correctamente; el `postinstall` falla después porque `verify:electron` invoca `bash` y Git Bash no está en el `PATH` normal |
+| Git Bash añadido solo al proceso + `npm.cmd ci` | Correcto | 648 paquetes; rebuild nativo y `verify:electron` correctos; 1 advisory moderada y aviso de `@types/bcryptjs` deprecado |
+| `npm.cmd run lint` | Correcto con avisos | Código 0; 677 avisos backend preexistentes y 0 errores |
+| `npm.cmd run build` | Correcto | TypeScript y assets de runtime |
+| `npm.cmd run build:frontend` | Correcto con advisories | Next 16.2.12 exporta 22 rutas; permanecen 9 advisories altas de tooling |
+| `npm.cmd run test:upgrade-path` | Correcto | v0→v38, copia feliz, integridad, FK, conservación, paridad e idempotencia |
+| Git Bash añadido solo al proceso + `npm.cmd test` | Fallo | La cadena llega a `test:reports-insights` y se detiene en 2 aserciones fallidas; los scripts posteriores no se ejecutan |
+| `npm.cmd run test:reports-insights` | Fallo, código 1 | 29/31: tiempo medio esperado 15, real 20; ingresos de cajero esperados 550, reales 500; [issue #20](https://github.com/joputajones/tpv-abierto/issues/20) |
+
+La primera envoltura PowerShell usada para restaurar `PATH` terminó con código
+0 por ejecutar la restauración después del comando externo. La salida ya
+mostraba los dos fallos y la repetición aislada confirmó código 1. Por tanto, no
+se presenta aquella envoltura como suite correcta. No quedaron listeners en
+3001/3002 ni cambios rastreados tras las pruebas.
 
 ### Estado real de CI
 
-Se inspeccionó el workflow finalizado `30576660280`, asociado al commit
-`5ad1a37e8bd2ae522754d65c575927199896ce39`.
+Se inspeccionó el workflow finalizado `30587223544`, asociado al commit
+`892f2c70d6fd0cbf8998a7bd127ffe77ce4ba935`.
 
 | Job | Resultado | Clasificación |
 | --- | --- | --- |
@@ -31,7 +57,7 @@ workflow o de la configuración queda separada en el
 `.github/workflows/ci.yml` en esta PR. Los logs también advierten que algunas
 acciones fijadas a Node 20 son forzadas a Node 24; el aviso no causó este fallo.
 
-### Diagnóstico exacto del entorno Windows
+### Diagnóstico inicial del entorno Windows, antes de la reparación
 
 | Elemento | Detectado | Versión o evidencia | Necesidad | Acción |
 | --- | --- | --- | --- | --- |
@@ -42,7 +68,7 @@ acciones fijadas a Node 20 son forzadas a Node 24; el aviso no causó este fallo
 | MSVC x86/x64 | Parcialmente presente | Toolset `14.29.30133`; `cl.exe` `19.29.30159.0` | Requerido | Conservar; validar desde un Developer Prompt tras la reparación |
 | MSBuild | Sí dentro de VS | `16.11.6.22506` | Requerido por la toolchain | Validar desde un Developer Prompt |
 | Windows SDK | No utilizable | Registro apunta a Windows Kits 10, pero faltan `Include`, `Windows.h`, `kernel32.lib`, `rc.exe` y `mt.exe`; `WindowsSdkDir` queda vacío | Requerido para el rebuild nativo | Instalar un SDK Windows 10/11 compatible mediante Visual Studio Installer |
-| Git Bash | Sí, fuera de `PATH` | GNU Bash `5.3.15` en `C:\Program Files\Git\bin\bash.exe` | Requerido solo por el agregador actual `npm test` | Añadirlo temporalmente a `PATH` o hacer el runner multiplataforma en otra PR |
+| Git Bash | Sí, fuera de `PATH` | GNU Bash `5.3.15` en `C:\Program Files\Git\bin\bash.exe` | Requerido por `postinstall`/`verify:electron` y por `npm test` | Añadirlo temporalmente a `PATH` o hacer ambos caminos multiplataforma en otra PR |
 
 `vswhere` encuentra la instancia y el componente
 `Microsoft.VisualStudio.Component.VC.Tools.x86.x64`, pero no satisface
@@ -52,12 +78,10 @@ conserva selecciones para C++ y SDK 19041, pero los archivos reales del SDK no
 están instalados. Por tanto, no debe confundirse una selección incompleta con
 un prerrequisito disponible ni prescribirse 19041 como versión obligatoria.
 
-La acción manual exacta está asignada al propietario en el
-[issue #18](https://github.com/joputajones/tpv-abierto/issues/18): abrir Visual
-Studio Installer como administrador, modificar o reparar Build Tools, completar
-**Desktop development with C++** (o componentes equivalentes) y un Windows
-10/11 SDK disponible. No se instaló ningún componente, no se cambió el registro
-y no se persistieron variables de entorno durante esta auditoría.
+La acción manual asignada al propietario en el
+[issue #18](https://github.com/joputajones/tpv-abierto/issues/18) se completó:
+Build Tools y el SDK quedaron instalados. Codex no instaló componentes, no
+cambió el registro y no persistió variables de entorno.
 
 Tras la reparación, ejecutar desde un Developer PowerShell o Developer Command
 Prompt:
@@ -66,13 +90,18 @@ Prompt:
 & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
 where.exe cl
 where.exe msbuild
-npm ci
-npm run verify:electron
-npm run build
-npm run build:frontend
-npm run test:upgrade-path
-$env:Path = 'C:\Program Files\Git\bin;' + $env:Path
-npm test
+$originalPath = $env:Path
+try {
+  $env:Path = 'C:\Program Files\Git\bin;' + $env:Path
+  npm ci
+  npm run verify:electron
+  npm run build
+  npm run build:frontend
+  npm run test:upgrade-path
+  npm test
+} finally {
+  $env:Path = $originalPath
+}
 ```
 
 ### Auditoría de privacidad del diff
@@ -92,7 +121,7 @@ Resultado final del escaneo sobre el árbol versionado y, por separado, sobre
 | Categoría | Árbol completo (coincidencias/archivos) | `docs/audit/` (coincidencias/archivos) | Revisión |
 | --- | ---: | ---: | --- |
 | Rutas de perfil Windows | 0 / 0 | 0 / 0 | Sin rutas nominales después del saneamiento |
-| IPv4 privadas, búsqueda amplia | 159 / 26 | 12 / 5 | En la auditoría son falsos positivos de versiones; fuera de ella son versiones, rangos o ejemplos genéricos de código/documentación |
+| IPv4 privadas, búsqueda amplia | 160 / 26 | 13 / 5 | En la auditoría son falsos positivos de versiones; fuera de ella son versiones, rangos o ejemplos genéricos de código/documentación |
 | Referencias a ficheros de base de datos | 57 / 20 | 8 / 2 | Rutas genéricas, fixtures, código, ignores y artefactos sintéticos documentados |
 | Asignaciones con aspecto de credencial | 59 / 15 | 0 / 0 | Solo fixtures y valores sintéticos bajo `tests/` |
 | Referencias al sistema legado | 21 / 9 | 2 / 1 | Política y planificación documental; ningún fichero real |

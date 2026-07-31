@@ -14,12 +14,12 @@ rechecked on Windows at merge commit
 `d366538fe1a5d798d5f6c6249b365e306e38efbc` with Node `v22.20.0` and npm
 `10.9.3`.
 
-The historical audit evidence reports that the TypeScript build, frontend
-static export, database upgrade-path test and complete automated suite passed
-in the audited checkout. The suite only started after Git Bash was added to
-`PATH`, and a clean root `npm ci` remains blocked because the Visual Studio
-Build Tools installation is incomplete/cancelled and has no usable Windows
-SDK. A synthetic order survived a controlled process termination and restart
+After the owner repaired Visual Studio Build Tools and the Windows SDK, the
+native rebuild, TypeScript build, frontend static export and database
+upgrade-path test pass. The literal root `npm ci` still fails because its
+postinstall verifier invokes Bash outside the normal `PATH`; with a temporary
+Git Bash path the install passes. The root suite then stops at two reproducible
+`test:reports-insights` failures tracked in issue #20. A synthetic order survived a controlled process termination and restart
 through the recommended standalone development server, but a graceful Electron
 shutdown and abrupt-power-loss cycle have not both been demonstrated.
 
@@ -40,8 +40,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
 | Upstream remote configured locally | `PARTIAL` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence is in unmerged PR #14 |
 | Development environment recorded | `PARTIAL` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence is in unmerged PR #14 |
-| Clean dependency installation | `BLOCKED` | `npm.cmd ci` exits 1: Build Tools 2019 is incomplete/cancelled; MSVC exists but a usable Windows SDK does not |
-| Baseline test suite | `PARTIAL` | Literal `npm.cmd test` cannot find `bash`; the full chain passes after adding Git Bash to process `PATH` |
+| Clean dependency installation | `BLOCKED` | Native rebuild passes after SDK repair, but literal `npm.cmd ci` exits 1 because `postinstall` cannot find Bash; temporary `PATH` workaround passes |
+| Baseline test suite | `PARTIAL` | With Git Bash temporary, the chain stops at `test:reports-insights` (29/31, exit 1); tracked in issue #20 |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
 | Main TypeScript build | `PARTIAL` | `npm.cmd run build` passes; evidence is in the unmerged audit PR |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
@@ -97,10 +97,12 @@ complete controlled matrix.
 
 ## Immediate next actions
 
-1. Complete the owner/admin repair and clean-install validation in
+1. Make the postinstall verifier and test runner cross-platform, or formally
+   retain Git Bash as a prerequisite, under
    [#18](https://github.com/joputajones/tpv-abierto/issues/18).
-2. Make the test runner cross-platform or formally retain Git Bash as a
-   prerequisite, then reproduce the complete suite from the clean installation.
+2. Resolve the reporting regression in
+   [#20](https://github.com/joputajones/tpv-abierto/issues/20), then reproduce
+   the complete suite from the clean installation.
 3. Resolve the fail-closed decision in
    [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
    premigration backups without editing released migrations.
@@ -113,9 +115,10 @@ complete controlled matrix.
 
 ## Blockers
 
-- The audited Windows environment has an incomplete/cancelled Build Tools 2019
-  instance: MSVC exists, but no usable Windows SDK is installed. Repair requires
-  an owner/admin action tracked in issue #18.
+- Build Tools/MSVC/SDK are now complete, but the documented literal `npm ci`
+  remains blocked by the Bash-dependent postinstall path (issue #18).
+- `test:reports-insights` fails two assertions and prevents the root suite from
+  reaching its remaining scripts (issue #20).
 - CI remains red because `dependency-review` is unsupported with the current
   repository configuration; tracked separately in issue #19.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a

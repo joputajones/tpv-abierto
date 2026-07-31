@@ -15,7 +15,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `PARTIAL` | Ruta feliz pasa y la suite confirma el fallo no bloqueante |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
-| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `BLOCKED` | Build Tools incompleto/cancelado; MSVC presente y SDK utilizable ausente |
+| Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `BLOCKED` | SDK/MSVC reparados; `npm ci` literal sigue fallando porque `postinstall` requiere Bash fuera de `PATH` |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `BLOCKED` | El action falla por capacidad/configuración del repositorio |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
 | Backups frente a desastre | R-005 / R-011 | `PARTIAL` | Restore automatizado; sin copia externa ni simulacro |
@@ -96,11 +96,14 @@ de emparejado seguro antes de despliegues no controlados.
 
 ## P1 — Instalación no reproducible en Windows auditado
 
-**Hecho observado:** `npm install` falla al reconstruir `better-sqlite3`. La
-instancia de VS Build Tools 2019 figura incompleta/cancelada: MSVC v142,
-`cl.exe` y MSBuild existen, pero no hay headers, librerías ni herramientas de
-un Windows SDK utilizable. `npm test` falla si Git Bash no está en `PATH`. El
-script `npm run clean` no detiene el Electron que acaba de arrancar.
+**Hecho observado:** inicialmente `npm install` fallaba al reconstruir
+`better-sqlite3` por una instalación incompleta de Build Tools/SDK. Tras la
+reparación administrativa, el rebuild nativo pasa. El comando literal sigue
+fallando después porque `postinstall` ejecuta `verify:electron` mediante Bash y
+Git Bash está fuera de `PATH`; `npm test` tiene la misma dependencia. Con Bash
+temporal, la instalación pasa y la suite llega a dos fallos de
+`test:reports-insights` (#20). El script `npm run clean` tampoco detuvo el
+Electron observado en la auditoría inicial.
 
 **Por qué importa:** onboarding de colaboradores, CI de Windows, recuperación
 urgente y builds de release pueden depender de estado previo de `node_modules`

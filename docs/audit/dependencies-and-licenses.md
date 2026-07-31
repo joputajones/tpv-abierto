@@ -11,11 +11,12 @@
 | Resultado | Lockfiles v3 válidos: 673 entradas raíz y 764 frontend; Electron `43.2.0`, better-sqlite3 `13.0.1`, Next `16.2.12` |
 | Limitación | El inventario refleja metadatos declarados; no sustituye revisión jurídica ni análisis del binario empaquetado |
 
-`npm.cmd ci` sigue fallando en el rebuild exigido por el postinstall al no
-encontrar Windows SDK. Después de una instalación diagnóstica sin scripts, el
-prebuild N-API incluido por `better-sqlite3@13.0.1` cargó correctamente tanto
-en Node 22 (módulos 127) como en Electron 43 (módulos 148). Esto explica por qué
-las pruebas pueden ejecutarse, pero no convierte el `npm ci` fallido en una
+Actualización 2026-07-31: tras reparar Build Tools/Windows SDK, el rebuild de
+`better-sqlite3@13.0.1` termina correctamente para Electron 43. `npm.cmd ci`
+sigue fallando con el entorno normal, pero en el paso posterior
+`verify:electron`, porque el script invoca Bash y Git Bash está fuera de
+`PATH`. La instalación completa pasa al añadir Git Bash solo al proceso. Esto
+valida la toolchain nativa, pero no convierte todavía el comando literal en una
 instalación reproducible.
 
 La repetición de `npm audit` conserva 1 vulnerabilidad moderada raíz (`tar`,

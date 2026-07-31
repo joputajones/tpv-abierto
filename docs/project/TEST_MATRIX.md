@@ -19,20 +19,22 @@ evidence alone.
 
 | Field | Value |
 |---|---|
-| Date | 2026-07-30 |
+| Date | 2026-07-31 |
 | Operating system | Windows 10 `10.0.19045`, PowerShell |
 | Node / npm | Node `v22.20.0`; npm `10.9.3` |
-| Analysed commit | `d366538fe1a5d798d5f6c6249b365e306e38efbc` |
+| Analysed code base | `d366538fe1a5d798d5f6c6249b365e306e38efbc`; post-repair evidence recorded in PR #14 |
 | Detailed log | [docs/audit/test-results.md](../audit/test-results.md) |
 
 | Exact command | Result | Evidence and limitation |
 |---|---|---|
 | `node --version`; `npm.cmd --version` | `PARTIAL` | Returned `v22.20.0` and `10.9.3`; evidence is in unmerged PR #14 |
-| `npm.cmd ci` | `BLOCKED` | Exit 1; Build Tools 2019 is incomplete/cancelled: MSVC exists, but no usable Windows SDK is installed ([#18](https://github.com/joputajones/tpv-abierto/issues/18)) |
+| `npm.cmd ci` | `BLOCKED` | Native rebuild passes after SDK repair; exit 1 occurs later because `verify:electron` cannot find Bash ([#18](https://github.com/joputajones/tpv-abierto/issues/18)) |
+| Git Bash added only to process + `npm.cmd ci` | `PARTIAL` | Exit 0; 648 packages, native rebuild and Electron verification pass; environment workaround required |
 | `npm.cmd ci --ignore-scripts` | `PARTIAL` | 648 packages; diagnostic only, not a valid production install; 1 moderate advisory |
-| `npx.cmd install-electron` | `PARTIAL` | Electron runtime `v43.2.0` available; native app-dependency rebuild still fails |
+| `npx.cmd install-electron` | `PARTIAL` | Electron runtime `v43.2.0` available; native rebuild now passes, but the literal postinstall remains Bash-dependent |
 | `npm.cmd test` | `BLOCKED` | Literal command exits 1 because `bash` is absent from `PATH` |
-| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | `PARTIAL` | Complete chained suite reached and passed `test:url-allowlist`; environment workaround required |
+| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | `PARTIAL` | Chain reaches `test:reports-insights`, fails 2 assertions and stops before later scripts ([#20](https://github.com/joputajones/tpv-abierto/issues/20)) |
+| `npm.cmd run test:reports-insights` | `BLOCKED` | Exit 1; 29/31 assertions pass, with average-preparation and cashier-revenue mismatches |
 | `npm.cmd run test:upgrade-path` | `PARTIAL` | v0→v38, backup, integrity, FK, preservation, schema parity and idempotency pass; backup-failure behaviour remains unsafe |
 | `npm.cmd run build` | `PARTIAL` | TypeScript and runtime-asset copy pass |
 | `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; 9 high frontend tooling advisories remain |
@@ -48,11 +50,11 @@ tests.
 
 | Test ID | Scenario | Required evidence | Status | M0 note |
 |---|---|---|---|---|
-| T-BLD-001 | Fresh dependency installation | Command log | `BLOCKED` | Root `npm.cmd ci` fails without Windows SDK |
+| T-BLD-001 | Fresh dependency installation | Command log | `BLOCKED` | SDK/MSVC repaired; root `npm.cmd ci` still needs Git Bash exposed for its postinstall verifier |
 | T-BLD-002 | Main TypeScript build | `BUILD` | `PARTIAL` | Build passes; PR not merged |
 | T-BLD-003 | Frontend static build | `BUILD` | `PARTIAL` | 22 routes exported; advisories remain |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `PARTIAL` | Full pass only after adding Git Bash to process `PATH` |
+| T-BLD-005 | Existing test suite | Command log | `PARTIAL` | Git Bash workaround starts the suite, but `test:reports-insights` fails and stops the chain (#20) |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `PARTIAL` | Happy path passes; premigration backup failure is not fail-closed |
 
 ## Orders and concurrency

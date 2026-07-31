@@ -43,18 +43,25 @@ open a Developer PowerShell or Developer Command Prompt and verify:
 & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
 where.exe cl
 where.exe msbuild
-npm ci
-npm run verify:electron
 ```
 
-The current root test aggregator invokes Bash. Git for Windows includes it at
-`C:\Program Files\Git\bin\bash.exe`, but that directory may not be on the normal
-PowerShell `PATH`. Until the runner is made cross-platform, expose it only for
-the current shell:
+The current root postinstall verifier and test aggregator both invoke Bash. Git
+for Windows includes it at `C:\Program Files\Git\bin\bash.exe`, but that
+directory may not be on the normal PowerShell `PATH`. Until those scripts are
+made cross-platform, expose it only for the current shell before running
+`npm ci` or `npm test`:
 
 ```powershell
-$env:Path = 'C:\Program Files\Git\bin;' + $env:Path
-npm test
+$originalPath = $env:Path
+try {
+  $env:Path = 'C:\Program Files\Git\bin;' + $env:Path
+  bash --version
+  npm ci
+  npm run verify:electron
+  npm test
+} finally {
+  $env:Path = $originalPath
+}
 ```
 
 Do not use `setx` solely for this workaround.
