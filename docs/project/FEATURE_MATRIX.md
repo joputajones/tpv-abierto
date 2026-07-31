@@ -4,7 +4,7 @@ This matrix tracks product requirements, not marketing claims. A feature can be 
 
 | ID | Capability | Current status | Target milestone | Acceptance summary |
 |---|---|---|---|---|
-| CORE-001 | Reproducible Windows development setup | `NOT_STARTED` | M0 | Fresh clone installs, builds and launches using documented commands |
+| CORE-001 | Reproducible Windows development setup | `PARTIAL` | M0 | Clean PowerShell install, verification and builds pass without Bash (#18); application launch and CI review remain |
 | CORE-002 | SQLite data persistence | `UNVERIFIED` | M0 | Confirmed order survives clean restart and abrupt app restart test |
 | CORE-003 | Safe database migration path | `UNVERIFIED` | M0 | Existing-data fixture upgrades with backup and no destructive loss |
 | CORE-004 | Local-only operation | `UNVERIFIED` | M1 | Core order flow works with internet disconnected |

@@ -16,12 +16,12 @@ A critical capability should not be considered production-ready with `CODE` evid
 
 | Test ID | Scenario | Required evidence | Status |
 |---|---|---|---|
-| T-BLD-001 | Fresh dependency installation | Command log | `NOT_STARTED` |
-| T-BLD-002 | Main TypeScript build | `BUILD` | `NOT_STARTED` |
-| T-BLD-003 | Frontend static build | `BUILD` | `NOT_STARTED` |
+| T-BLD-001 | Fresh dependency installation | Command log | `PARTIAL` — Windows PowerShell passes without Bash; Linux CI pending (#18) |
+| T-BLD-002 | Main TypeScript build | `BUILD` | `PARTIAL` — local Windows pass; CI review pending |
+| T-BLD-003 | Frontend static build | `BUILD` | `PARTIAL` — local Windows pass; CI review pending |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `NOT_STARTED` |
-| T-BLD-005 | Existing test suite | Command log | `NOT_STARTED` |
-| T-BLD-006 | Existing database upgrade path | `CODE` | `NOT_STARTED` |
+| T-BLD-005 | Existing test suite | Command log | `PARTIAL` — no Bash failure; stops at the independent reports regression (#20) |
+| T-BLD-006 | Existing database upgrade path | `CODE` | `PARTIAL` — local Windows v0→v38 pass; CI review pending |
 
 ## Orders and concurrency
 

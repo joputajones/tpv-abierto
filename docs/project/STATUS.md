@@ -1,6 +1,6 @@
 # Development status
 
-**Snapshot date:** 2026-07-29  
+**Snapshot date:** 2026-07-31
 **Overall phase:** Phase 0 — baseline audit  
 **Overall status:** `IN_PROGRESS`
 
@@ -17,12 +17,12 @@ No production-readiness, Spanish fiscal compliance or restaurant deployment clai
 | Public GitHub repository exists | `DONE` | `joputajones/tpv-abierto` |
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
 | Upstream remote configured locally | `UNVERIFIED` | Must be checked with `git remote -v` |
-| Development environment installed | `UNVERIFIED` | Git, Node >= 22 and npm versions must be recorded |
-| Dependency installation | `NOT_STARTED` | Run and record `npm install` |
-| Baseline test suite | `NOT_STARTED` | Run and record `npm test` |
-| Upgrade-path tests | `NOT_STARTED` | Run and record `npm run test:upgrade-path` if available |
-| Main TypeScript build | `NOT_STARTED` | Run and record `npm run build` |
-| Frontend build | `NOT_STARTED` | Run and record `npm run build:frontend` |
+| Development environment installed | `PARTIAL` | Windows toolchain recorded in #18; cross-platform CI evidence pending |
+| Dependency installation | `PARTIAL` | `npm.cmd ci` passes in PowerShell without Bash; Linux CI pending |
+| Baseline test suite | `PARTIAL` | Runs without Bash and reaches the independent `test:reports-insights` failure in #20 |
+| Upgrade-path tests | `PARTIAL` | Local Windows v0→v38 validation passes; CI review pending |
+| Main TypeScript build | `PARTIAL` | Local Windows build passes; CI review pending |
+| Frontend build | `PARTIAL` | Local Windows static build passes; CI review pending |
 | Windows application launch | `NOT_STARTED` | Must be demonstrated locally |
 | KDS local-network flow | `UNVERIFIED` | Code exists upstream; project validation pending |
 | Secondary cashier/mobile flow | `UNVERIFIED` | Project validation pending |
@@ -66,6 +66,9 @@ Exit criteria:
 
 ## Blockers
 
+- #20: the reports insights regression keeps the complete suite from passing.
+- #16: pre-migration backup fail-closed behaviour still needs a decision and validation.
+- #18 remains in review until the Windows portability PR has Linux CI evidence and is merged.
 - Full VirtuaPOS installation data is not yet available.
 - Physical restaurant printer and network testing must wait for the next visit or an equivalent test bench.
 

@@ -55,26 +55,30 @@ function runTest() {
 
   console.log('✓ kill-ports.js pattern matching verified');
 
-  console.log('Testing nuclear-reset.sh confirmation guard...');
+  if (process.platform === 'win32') {
+    console.log('Skipped nuclear-reset.sh confirmation guard (POSIX-only developer utility)');
+  } else {
+    console.log('Testing nuclear-reset.sh confirmation guard...');
 
-  // Running nuclear-reset.sh in non-interactive mode without -y should fail
-  const nonInteractiveResult = spawnSync('bash', [path.join(rootDir, 'nuclear-reset.sh')], {
-    encoding: 'utf8',
-    env: { ...process.env, FORCE: '', CI: '' },
-  });
+    // Running nuclear-reset.sh in non-interactive mode without -y should fail.
+    const nonInteractiveResult = spawnSync('bash', [path.join(rootDir, 'nuclear-reset.sh')], {
+      encoding: 'utf8',
+      env: { ...process.env, FORCE: '', CI: '' },
+    });
 
-  assert.strictEqual(
-    nonInteractiveResult.status,
-    1,
-    'Expected non-interactive nuclear-reset.sh without -y flag to fail with exit code 1',
-  );
-  assert.match(
-    nonInteractiveResult.stdout + nonInteractiveResult.stderr,
-    /Non-interactive shell detected/i,
-    'Expected output to warn about non-interactive shell',
-  );
+    assert.strictEqual(
+      nonInteractiveResult.status,
+      1,
+      'Expected non-interactive nuclear-reset.sh without -y flag to fail with exit code 1',
+    );
+    assert.match(
+      nonInteractiveResult.stdout + nonInteractiveResult.stderr,
+      /Non-interactive shell detected/i,
+      'Expected output to warn about non-interactive shell',
+    );
 
-  console.log('✓ nuclear-reset.sh non-interactive confirmation guard verified');
+    console.log('✓ nuclear-reset.sh non-interactive confirmation guard verified');
+  }
 
   console.log('All dev tooling script tests passed cleanly!');
 }

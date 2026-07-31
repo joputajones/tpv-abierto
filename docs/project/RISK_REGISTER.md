@@ -21,6 +21,7 @@ Scores use a simple 1-5 scale for probability and impact. Priority is probabilit
 | R-015 | Scope expands into a full Restaurant OS before the pilot works | 5 | 4 | 20 | Enforce milestone gates and out-of-scope list in `PRODUCT_SPEC.md` | `OPEN` |
 | R-016 | Documentation drifts away from actual implementation | 4 | 3 | 12 | Require tracking-document updates in behaviour-changing PRs | `OPEN` |
 | R-017 | Upstream `AGENTS.md` contains stale versions or commands | 3 | 3 | 9 | Verify against `package.json`, scripts and actual command results during M0 | `OPEN` |
+| R-022 | Windows installation or validation depends on an implicit Bash/toolchain setup | 2 | 4 | 8 | Node-based install verifier and test runner; clean PowerShell evidence in #18; Linux CI pending | `IN_REVIEW` |
 
 ## Escalation rule
 

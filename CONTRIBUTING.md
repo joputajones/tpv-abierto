@@ -24,6 +24,34 @@ npm run dev
 
 This launches both the Next.js dev server (port 3002) and the Electron app (port 3001 API).
 
+### Windows installation and validation
+
+The root install rebuilds native modules, including `better-sqlite3`. Windows
+therefore needs a complete Visual Studio Build Tools installation with the
+Desktop development with C++ workload and a usable Windows SDK. Git Bash is
+not a prerequisite: the postinstall verifier and test aggregator use Node.js
+without a command shell.
+
+Run the acceptance path from a normal PowerShell session:
+
+```powershell
+where.exe bash # No match is acceptable; Bash is not required.
+npm.cmd ci
+npm.cmd run verify:electron
+npm.cmd run build
+npm.cmd run build:frontend
+npm.cmd run test:upgrade-path
+npm.cmd test
+```
+
+The test aggregator preserves the established order, treats exit code 77 as
+an ABI-mismatch skip, and stops on the first real failure. The Windows
+portability evidence is tracked in
+[`joputajones/tpv-abierto#18`](https://github.com/joputajones/tpv-abierto/issues/18).
+The independent `test:reports-insights` regression is tracked in
+[`#20`](https://github.com/joputajones/tpv-abierto/issues/20); that functional
+failure is not an installation or Bash failure.
+
 ### macOS Gatekeeper & the Electron dev binary
 
 Electron 43 removed the old automatic postinstall download (a supply-chain
