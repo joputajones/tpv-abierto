@@ -170,8 +170,9 @@ padre y workers Electron-as-Node. Cada worker simula explícitamente
 `initDatabase()`, API, KDS y cierres de producción sin importar `main/index.ts`.
 WhatsApp es un no-op visible del arnés; cloud, telemetría, updater, mDNS,
 impresión y ventana no arrancan. El padre elige puertos efímeros distintos de
-3001/3002, espera IPC y health 200, y solo puede forzar PIDs registrados. Esta
-evidencia sigue `PARTIAL` hasta CI/merge y su nivel máximo es `SIM`.
+3001/3002, espera IPC y health 200, y solo puede forzar PIDs registrados. PR #31
+integró el arnés tras pasar R-01…R-12 en Windows y Linux; #30 está cerrado. Su
+nivel máximo sigue siendo `SIM`.
 
 Las copias manuales usan la API de backup de SQLite, pasan a journal DELETE y
 añaden `_flo_meta` con versión de esquema, fecha y versión de aplicación. Puede

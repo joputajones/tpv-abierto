@@ -163,6 +163,41 @@ No se modificó producción, esquema, migraciones, dependencias, lockfiles,
 workflows ni licencia. El arnés eliminó sus directorios temporales y no dejó
 procesos, listeners, bases ni logs fuera de su sandbox.
 
+### Validación integrada posterior a PR #31
+
+PR [#31](https://github.com/joputajones/tpv-abierto/pull/31) pasó a revisión
+con head protegido
+`2b61bd91c802c494eca30df9d32b063be1967ef0` y se fusionó mediante merge commit
+`0b629ab6de5cf47939bc6c5305fe8faa4f43ee12`. La issue #30 se cerró
+automáticamente. No hubo reviews, comentarios accionables ni conversaciones
+pendientes antes del merge.
+
+| Job CI (run `30668010945`) | Resultado | Duración | Evidencia |
+| --- | --- | ---: | --- |
+| `changes` | PASS | 7 s | Clasificó el cambio de tests/documentación |
+| Invariante fiscal | PASS | 27 s | Productos sin categoría permanecen con impuesto cero |
+| `dependency-review` | PASS | 8 s | Política configurada aplicada |
+| `e2e-playwright` | PASS | 1 min 44 s | Flujo navegador verde |
+| `linux-baseline` | PASS | 3 min 40 s | El log contiene 12 líneas R-01…R-12 PASS, `Evidence level: SIM` y `Cleanup PASS` |
+
+La validación posterior se ejecutó desde el `main` integrado, todavía en
+PowerShell normal sin Bash:
+
+| Comando | Código | Duración | Resultado |
+| --- | ---: | ---: | --- |
+| `where.exe bash` | 1 | 0,1 s | Bash ausente, como se esperaba |
+| `npm.cmd ci` | 0 | 33,0 s | 648 paquetes; rebuild nativo y Electron correctos; 1 advisory moderada raíz |
+| `npm.cmd run test:restart-recovery` | 0 | 53,5 s | R-01…R-12 y limpieza pasan desde el merge commit |
+| `npm.cmd run test:upgrade-path` | 0 | 1,6 s | v0→v38 e idempotencia |
+| `npm.cmd run test:backup` | 0 | 1,0 s | 10/10 |
+| `npm.cmd run build` | 0 | 13,4 s | TypeScript y assets correctos |
+| `npm.cmd run build:frontend` | 0 | 51,2 s | 22 rutas; 0 vulnerabilidades en la instalación frontend |
+| `npm.cmd test` | 0 | 170,3 s | Los 67 scripts terminaron sin Bash |
+
+CORE-002 queda `DONE` solo para persistencia y reinicio controlado a nivel
+`SIM`. M0 continúa `IN_PROGRESS`; no se acredita corte eléctrico, restore fuera
+del equipo, hardware, operación real, fiscalidad ni disaster recovery.
+
 ### Validación histórica posterior a la reparación administrativa
 
 Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
