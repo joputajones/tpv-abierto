@@ -11,12 +11,12 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ## Development Setup
 
 ```bash
-# Clone the repo
-git clone https://github.com/FreeOpenSourcePOS/FloCafe.git
-cd FloCafe
+# Clone the maintained fork
+git clone https://github.com/joputajones/tpv-abierto.git
+cd tpv-abierto
 
 # Install dependencies (rebuilds native modules)
-npm install
+npm ci
 
 # Start development
 npm run dev
@@ -45,31 +45,34 @@ where.exe cl
 where.exe msbuild
 ```
 
-The current root postinstall verifier and test aggregator both invoke Bash. Git
-for Windows includes it at `C:\Program Files\Git\bin\bash.exe`, but that
-directory may not be on the normal PowerShell `PATH`. Until those scripts are
-made cross-platform, expose it only for the current shell before running
-`npm ci` or `npm test`:
+### Windows installation and validation
+
+The root install rebuilds native modules, including `better-sqlite3`. Windows
+therefore needs a complete Visual Studio Build Tools installation with the
+Desktop development with C++ workload and a usable Windows SDK. Git Bash is
+not a prerequisite: the postinstall verifier and test aggregator use Node.js
+without a command shell.
+
+Run the acceptance path from a normal PowerShell session:
 
 ```powershell
-$originalPath = $env:Path
-try {
-  $env:Path = 'C:\Program Files\Git\bin;' + $env:Path
-  bash --version
-  npm ci
-  npm run verify:electron
-  npm test
-} finally {
-  $env:Path = $originalPath
-}
+where.exe bash # No match is acceptable; Bash is not required.
+npm.cmd ci
+npm.cmd run verify:electron
+npm.cmd run build
+npm.cmd run build:frontend
+npm.cmd run test:upgrade-path
+npm.cmd test
 ```
 
-Do not use `setx` solely for this workaround.
-
-PR #21 contains a cross-platform Node-based replacement and evidence that these
-commands pass in ordinary PowerShell without Bash. Until that PR is reviewed and
-merged, the instructions above remain the behaviour and workaround for current
-`main`; do not treat the pending branch as an installed prerequisite change.
+The test aggregator preserves the established order, treats exit code 77 as
+an ABI-mismatch skip, and stops on the first real failure. The Windows
+portability evidence is tracked in
+[`joputajones/tpv-abierto#18`](https://github.com/joputajones/tpv-abierto/issues/18).
+The independent `test:reports-insights` regression was resolved in
+[`#20`](https://github.com/joputajones/tpv-abierto/issues/20). POSIX scripts
+used only by macOS or release maintenance remain valid, but they are not part
+of the mandatory Windows installation or root test path.
 
 ### macOS Gatekeeper & the Electron dev binary
 

@@ -1,7 +1,6 @@
 # Development status
 
 **Snapshot date:** 2026-07-31
-
 **Overall phase:** Phase 0 — baseline audit
 
 **Overall status:** `IN_PROGRESS`
@@ -12,22 +11,24 @@ The pre-existing audit commit `c9110f4` has been preserved and reconciled with
 the project-tracking documents introduced by PR #13. The runtime evidence was
 rechecked on Windows at merge commit
 `d366538fe1a5d798d5f6c6249b365e306e38efbc` with Node `v22.20.0` and npm
-`10.9.3`. The documentation was reconciled again after PR #24 entered `main` at
-merge commit `38abca3f0d149c6d245adc0a19705c828b1d70aa`.
+`10.9.3`. PR #24 restored dependency review, PR #14 merged the reconciled M0
+baseline and PR #22 merged the deterministic reports fixture. Issues #15, #19
+and #20 are closed.
 
 After the owner repaired Visual Studio Build Tools and the Windows SDK, the
 native rebuild, TypeScript build, frontend static export and database
 upgrade-path test pass. The current `main` still requires Bash for the root
-postinstall verifier and test aggregator. PR #21 replaces those mandatory paths
-with cross-platform Node scripts and has Windows/Linux evidence, but remains
-unmerged, so issue #18 and R-022 are `PARTIAL`, not `DONE`.
+postinstall verifier and test aggregator. PR #21 has integrated current `main`
+and replaces those mandatory paths with cross-platform Node scripts. The
+updated Windows acceptance path and all 65 test scripts pass without Bash, but
+CI and merge are still pending, so issue #18 and R-022 remain `PARTIAL`, not
+`DONE`.
 
 The historical root suite stopped at two reproducible `test:reports-insights`
-failures (29/31). PR #22 demonstrates that a `Date.now()`-dependent fixture,
-not the production endpoint, caused both values and makes the test deterministic;
-it also remains unmerged, so issue #20 is still open and `PARTIAL`. Dependency
-Graph is now enabled, dependency review is operational, PR #24 is merged and
-issue #19 is closed. A synthetic order survived a controlled process termination
+failures (29/31). PR #22 proved that a `Date.now()`-dependent fixture, not the
+production endpoint, caused both values; the correction is merged and #20 is
+closed. Dependency Graph is enabled, dependency review is operational, PR #24
+is merged and #19 is closed. A synthetic order survived a controlled process termination
 and restart through the recommended standalone development server, but a
 graceful Electron shutdown and abrupt-power-loss cycle have not both been
 demonstrated.
@@ -47,12 +48,12 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 |---|---|---|
 | Public GitHub repository exists | `DONE` | `joputajones/tpv-abierto`; PR #13 is merged into `main` |
 | FloCafe source imported | `DONE` | Repository contains upstream code and history |
-| Upstream remote configured locally | `PARTIAL` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence is in unmerged PR #14 |
-| Development environment recorded | `PARTIAL` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence is in unmerged PR #14 |
-| Clean dependency installation | `PARTIAL` | Native rebuild passes after SDK repair; current `main` still needs Bash, while PR #21 demonstrates a cross-platform replacement and remains pending review/merge (#18) |
-| Baseline test suite | `PARTIAL` | Historical `main` evidence stops at `test:reports-insights` (29/31); PR #22 fixes the deterministic test fixture and is green on Windows/Linux but is not merged (#20) |
+| Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
+| Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
+| Clean dependency installation | `PARTIAL` | After integrating current `main`, PR #21 runs `npm.cmd ci`, native rebuild and Electron verification without Bash; CI and merge remain pending (#18) |
+| Baseline test suite | `PARTIAL` | PR #22 and #20 are complete; PR #21 passes all 65 scripts without Bash and proves fail-fast error propagation, but CI and merge remain pending |
 | Upgrade-path test | `PARTIAL` | v0→v38 happy path, backup, integrity, preservation, parity and idempotency pass; backup-failure path is not fail-closed |
-| Main TypeScript build | `PARTIAL` | `npm.cmd run build` passes; evidence is in the unmerged audit PR |
+| Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; npm reports 9 high tooling vulnerabilities |
 | Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit; standalone backend restart was repeated, but no packaged Windows build was tested |
 | SQLite persistence | `PARTIAL` | One synthetic pending order survived process termination and restart; graceful plus abrupt restart matrix remains incomplete |
@@ -61,9 +62,9 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
 | Backup and restore validation | `PARTIAL` | Automated disposable backup/restore and migration backup paths pass; no off-device restore drill or second-person procedure |
 | Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
-| Architecture and production risks | `PARTIAL` | Reconciled under `docs/audit/` and this tracking set; PR #14 is not merged |
+| Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
-| PR #14 governance evidence | `PARTIAL` | Open and unmerged; this documentation establishes the review baseline but does not close M0 |
+| PR #14 governance evidence | `DONE` | PR #14 merged at `90756e7`; #15 closed with the explicit decision to keep M0 `IN_PROGRESS` |
 | VirtuaPOS catalogue analysis | `PARTIAL` | Initial analysis exists outside the public repository; no reviewed sanitised fixture is committed |
 | Full `C:\BLATTA` acquisition | `BLOCKED` | Requires another restaurant visit; raw contents must remain outside the public repository |
 | VirtuaPOS importer | `NOT_STARTED` | Cannot be considered implemented |
@@ -81,40 +82,29 @@ built, launched and understood before product changes begin.
 
 Exit criteria:
 
-- [ ] Local repository remotes and branches recorded; evidence collected in PR
-      #14, pending review and merge.
-- [ ] Node and npm versions recorded; evidence collected in PR #14, pending
-      review and merge.
+- [x] Local repository remotes and branches recorded; evidence merged in PR #14.
+- [x] Node and npm versions recorded; evidence merged in PR #14.
 - [ ] Clean dependency installation completed.
-- [ ] Existing tests completed and failures documented; historical evidence is
-      in PR #14, pending review and merge.
-- [ ] Main build completed; historical evidence is in PR #14, pending review
-      and merge.
-- [ ] Frontend build completed; historical evidence is in PR #14, pending
-      review and merge.
-- [ ] Application launched on Windows; historical evidence is in PR #14,
-      pending review and merge.
-- [ ] Database, logs and backup paths recorded in PR #14, pending review and
-      merge.
-- [ ] One disposable order survives an application process restart; historical
-      evidence is in PR #14, pending review and merge.
-- [ ] Baseline architecture and production risks documented in PR #14, pending
-      review and merge.
+- [ ] Existing tests completed; reports are fixed, while the Bash-free runner awaits merge.
+- [x] Main build completed; evidence merged in PR #14.
+- [x] Frontend build completed; evidence merged in PR #14.
+- [x] Application launched on Windows; limited baseline evidence merged in PR #14.
+- [x] Database, logs and backup paths recorded in PR #14.
+- [x] One disposable order survives an application process restart; limited evidence merged in PR #14.
+- [x] Baseline architecture and production risks documented in PR #14.
 
-M0 remains `IN_PROGRESS`: the cross-platform install/test runner and deterministic
-reports fixture exist only in unmerged PRs #21 and #22, the final evidence PR is
-not merged, issue #16 remains open, and clean/abrupt restart behaviour still
-needs a complete controlled matrix.
+M0 remains `IN_PROGRESS`: the cross-platform install/test runner remains in
+unmerged PR #21, issue #16 remains open, and clean/abrupt restart behaviour
+still needs a complete controlled matrix. The merged reports fix does not close
+those gaps.
 
 ## Immediate next actions
 
 1. Review and integrate the cross-platform runner in
    [PR #21](https://github.com/joputajones/tpv-abierto/pull/21), then close
    [#18](https://github.com/joputajones/tpv-abierto/issues/18) through its merge.
-2. Review and integrate the deterministic reports fixture in
-   [PR #22](https://github.com/joputajones/tpv-abierto/pull/22), then close
-   [#20](https://github.com/joputajones/tpv-abierto/issues/20) and reproduce the
-   complete suite from the updated clean installation.
+2. After PR #21 merges, repeat the Bash-free acceptance path from `main` and
+   reconcile the evidence without overstating physical recovery coverage.
 3. Resolve the fail-closed decision in
    [#16](https://github.com/joputajones/tpv-abierto/issues/16), then protect
    existing databases before migration without editing released migrations. A
@@ -127,11 +117,8 @@ needs a complete controlled matrix.
 
 ## Blockers
 
-- Build Tools/MSVC/SDK are complete. Current `main` still has the Bash-dependent
-  postinstall/test path; PR #21 contains the technical candidate but is
-  not integrated (#18).
-- Historical `main` evidence has two `test:reports-insights` assertion failures;
-  PR #22 contains the deterministic test correction but is not integrated (#20).
+- Build Tools/MSVC/SDK and the updated Bash-free Windows validation are complete.
+  Current `main` still has the old paths until PR #21 passes CI and merges (#18).
 - Premigration backup failure is not fail-closed for an existing database
   (issue #16).
 - Dependency review is operational, but no branch protection or ruleset enforces

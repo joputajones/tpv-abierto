@@ -27,14 +27,14 @@ evidence alone.
 
 | Exact command | Result | Evidence and limitation |
 |---|---|---|
-| `node --version`; `npm.cmd --version` | `PARTIAL` | Returned `v22.20.0` and `10.9.3`; evidence is in unmerged PR #14 |
-| `npm.cmd ci` on audited `main` | `PARTIAL` | Historical exit 1 occurred after the repaired native rebuild because `verify:electron` could not find Bash; unmerged PR #21 demonstrates exit 0 in PowerShell without Bash ([#18](https://github.com/joputajones/tpv-abierto/issues/18)) |
+| `node --version`; `npm.cmd --version` | `DONE` | Returned `v22.20.0` and `10.9.3`; baseline evidence merged in PR #14 |
+| `npm.cmd ci` on audited `main` | `PARTIAL` | Historical exit 1 occurred because `verify:electron` could not find Bash; after integrating current `main`, PR #21 exits 0, installs 648 packages, rebuilds `better-sqlite3` and verifies Electron without Bash. CI and merge remain ([#18](https://github.com/joputajones/tpv-abierto/issues/18)) |
 | Git Bash added only to process + `npm.cmd ci` | `PARTIAL` | Exit 0; 648 packages, native rebuild and Electron verification pass; environment workaround required |
 | `npm.cmd ci --ignore-scripts` | `PARTIAL` | 648 packages; diagnostic only, not a valid production install; 1 moderate advisory |
-| `npx.cmd install-electron` | `PARTIAL` | Electron runtime `v43.2.0` available; native rebuild now passes, but the literal postinstall remains Bash-dependent |
-| `npm.cmd test` on audited `main` | `PARTIAL` | Historical literal command exits 1 without Bash; PR #21 supplies an unmerged cross-platform aggregator that reaches real tests |
-| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | `PARTIAL` | Historical chain reaches `test:reports-insights`, fails 2 assertions and stops before later scripts; unmerged PR #22 has a green full suite ([#20](https://github.com/joputajones/tpv-abierto/issues/20)) |
-| `npm.cmd run test:reports-insights` on audited `main` | `PARTIAL` | Historical exit 1 with 29/31 assertions; unmerged PR #22 freezes the request clock, covers the inclusive 90-day boundary and passes 31/31 |
+| `npx.cmd install-electron` | `PARTIAL` | Electron runtime `v43.2.0` available; native rebuild and Node verifier pass without Bash on PR #21; merge remains pending |
+| `npm.cmd test` on audited `main` | `PARTIAL` | Historical literal command exits 1 without Bash; after integrating current `main`, PR #21 runs all 65 scripts and exits 0 without Bash, but awaits CI and merge |
+| `$env:Path='C:\Program Files\Git\bin;'+$env:Path; npm.cmd test` | `PARTIAL` | Historical workaround reached the reports regression; PR #22 is now merged, #20 closed and the deterministic test passes 31/31 |
+| `npm.cmd run test:reports-insights` on audited `main` | `DONE` | PR #22 freezes the request clock, covers the inclusive 90-day boundary and passes 31/31 on Windows/Linux; #20 is closed |
 | `npm.cmd run test:upgrade-path` | `PARTIAL` | v0→v38, backup, integrity, FK, preservation, schema parity and idempotency pass; backup-failure behaviour remains unsafe |
 | `npm.cmd run build` | `PARTIAL` | TypeScript and runtime-asset copy pass |
 | `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; 9 high frontend tooling advisories remain |
@@ -42,19 +42,19 @@ evidence alone.
 | `npm.cmd audit --json` | `PARTIAL` | 1 moderate transitive development advisory (`tar`) |
 | `cd frontend; npm.cmd audit --json` | `PARTIAL` | 9 high advisories in frontend lint/tooling dependency paths |
 
-The statuses remain `PARTIAL` until this evidence PR is reviewed and merged.
+Portability statuses remain `PARTIAL` until PR #21 passes CI and is merged.
 Hardware, network-failure and pilot evidence was not manufactured from code
-tests.
+tests, and historical failures remain recorded above.
 
 ## Baseline and build
 
 | Test ID | Scenario | Required evidence | Status | M0 note |
 |---|---|---|---|---|
-| T-BLD-001 | Fresh dependency installation | Command log | `PARTIAL` | SDK/MSVC repaired; current `main` still needs Git Bash, while PR #21 demonstrates a Bash-free PowerShell install but awaits merge |
-| T-BLD-002 | Main TypeScript build | `BUILD` | `PARTIAL` | Build passes; PR not merged |
-| T-BLD-003 | Frontend static build | `BUILD` | `PARTIAL` | 22 routes exported; advisories remain |
+| T-BLD-001 | Fresh dependency installation | Command log | `PARTIAL` | PR #21 passes clean PowerShell installation and native rebuild without Bash; CI and merge remain |
+| T-BLD-002 | Main TypeScript build | `BUILD` | `PARTIAL` | PR #21 build passes after integrating current `main`; CI and merge remain |
+| T-BLD-003 | Frontend static build | `BUILD` | `PARTIAL` | PR #21 exports 22 routes; CI, merge and tooling advisories remain |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `PARTIAL` | Historical main run stopped at `test:reports-insights`; PR #22 is green on Windows/Linux but awaits merge (#20) |
+| T-BLD-005 | Existing test suite | Command log | `PARTIAL` | PR #22 is merged and #20 closed; PR #21 passes all 65 scripts without Bash, while CI and merge remain required |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `PARTIAL` | Happy path passes; premigration backup failure is not fail-closed |
 
 ## Orders and concurrency
