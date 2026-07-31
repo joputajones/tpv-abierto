@@ -19,14 +19,33 @@ la evidencia histórica del estado integrado en `main`.
 
 | Elemento | Estado observado inicialmente | Causa raíz | Corrección / acción | Estado actual en `main` | Evidencia en PR | Limitación restante |
 | --- | --- | --- | --- | --- | --- | --- |
-| #18 / R-022 | Toolchain incompleta; después, `npm ci` fallaba al no encontrar Bash | SDK inicial ausente, ya reparado; scripts obligatorios dependían de Bash | PR #21 usa scripts Node multiplataforma | `PARTIAL`; #18 abierto y Bash aún requerido | Windows: `npm ci` y `verify:electron` sin Bash; runner llega a pruebas reales. Linux valida los scripts | PR #21 sigue sin fusionar y parte de un `main` anterior |
+| #18 / R-022 | Toolchain incompleta; después, `npm ci` fallaba al no encontrar Bash | SDK inicial ausente, ya reparado; scripts obligatorios dependían de Bash | PR #21 usa scripts Node multiplataforma | `DONE` en su alcance; PR #21 fusionada en `a51fa54` y #18 cerrado | Windows `main`: instalación, rebuild, verificador, builds, upgrade fixture y 65 scripts sin Bash; Linux/Playwright verdes | No prueba restore externo, hardware, LAN hostil ni recuperación durante servicio |
 | #19 / R-025 | `dependency-review` fallaba como no soportado antes del análisis | Dependency Graph deshabilitado | Se habilitó; PR #24 documentó y fusionó la política | `DONE`; #19 cerrado | Acción v4.5.0 fijada por SHA, permisos de lectura, umbral `high`; PR documental y cambio controlado de lockfile | Sin branch protection/ruleset; bloqueo de merge manual |
-| #20 | `test:reports-insights` 29/31; promedio 20 e ingresos 500 | `Date.now()` movía el inicio inclusivo de 90 días al 2 de mayo de 2026 y excluía la orden del 1 de mayo | PR #22 fija el reloj durante la petición y lo restaura en `try/finally` | `PARTIAL`; #20 abierto y fixture actual sin integrar | Test aislado 31/31; suite completa verde en Windows/Linux; límite, orden anterior y cancelación cubiertos | PR #22 sigue sin fusionar y parte de un `main` anterior |
+| #20 | `test:reports-insights` 29/31; promedio 20 e ingresos 500 | `Date.now()` movía el inicio inclusivo de 90 días al 2 de mayo de 2026 y excluía la orden del 1 de mayo | PR #22 fija el reloj durante la petición y lo restaura en `try/finally` | `DONE`; PR #22 fusionada y #20 cerrado | Test aislado 31/31 y suite completa verde desde `main` en Windows/Linux | No cambia el endpoint de producción |
 
 La evidencia de #20 explica exactamente los dos valores históricos y no señala
-una regresión del endpoint de producción. Las afirmaciones de Windows/Linux son
-resultados registrados por las PR #21/#22; no se presentan como pruebas
-repetidas durante esta reconciliación documental.
+una regresión del endpoint de producción. Las validaciones de PR #21/#22 se
+repitieron desde el `main` integrado antes de esta reconciliación documental.
+
+### Validación integrada posterior a PR #21
+
+PowerShell normal, sin añadir Git Bash al `PATH`; `where.exe bash` devolvió 1.
+
+| Comando | Código | Duración | Resultado |
+| --- | ---: | ---: | --- |
+| `npm.cmd ci` | 0 | 30,9 s | 648 paquetes; `better-sqlite3` reconstruido; Electron verificado |
+| `npm.cmd run verify:electron` | 0 | 0,7 s | Verificador Node sin Bash |
+| `npm.cmd run test:cross-platform-scripts` | 0 | 0,9 s | Runner, rutas con espacios, npm y códigos validados |
+| `npm.cmd run test:reports-insights` | 0 | 7,6 s | 31/31 |
+| `npm.cmd run build` | 0 | 13,4 s | TypeScript y assets correctos |
+| `npm.cmd run build:frontend` | 0 | 51,6 s | 22 páginas; 9 advisories altas de tooling |
+| `npm.cmd run test:upgrade-path` | 0 | 1,7 s | v0→v38, integridad, FK e idempotencia |
+| `npm.cmd test` | 0 | 151,8 s | Los 65 scripts terminaron, incluidos los posteriores a reports |
+
+La CI de PR #21 también pasó `changes`, invariante fiscal,
+`dependency-review`, `linux-baseline` y `e2e-playwright`. Una alteración local
+temporal hizo fallar el último test: el runner identificó el script, devolvió 1
+y se detuvo. El parche se revirtió completamente antes del push.
 
 ### Validación histórica posterior a la reparación administrativa
 
@@ -107,7 +126,7 @@ con CI rojo.
 | MSVC x86/x64 | Parcialmente presente | Toolset `14.29.30133`; `cl.exe` `19.29.30159.0` | Requerido | Conservar; validar desde un Developer Prompt tras la reparación |
 | MSBuild | Sí dentro de VS | `16.11.6.22506` | Requerido por la toolchain | Validar desde un Developer Prompt |
 | Windows SDK | No utilizable | Registro apunta a Windows Kits 10, pero faltan `Include`, `Windows.h`, `kernel32.lib`, `rc.exe` y `mt.exe`; `WindowsSdkDir` queda vacío | Requerido para el rebuild nativo | Instalar un SDK Windows 10/11 compatible mediante Visual Studio Installer |
-| Git Bash | Sí, fuera de `PATH` | GNU Bash `5.3.15` en `C:\Program Files\Git\bin\bash.exe` | Requerido por `postinstall`/`verify:electron` y por `npm test` | Añadirlo temporalmente a `PATH` o hacer ambos caminos multiplataforma en otra PR |
+| Git Bash | Sí, fuera de `PATH` | GNU Bash `5.3.15` en `C:\Program Files\Git\bin\bash.exe` | Requisito histórico ya eliminado de los caminos obligatorios | No añadirlo al `PATH`; PR #21 integró los reemplazos Node |
 
 `vswhere` encuentra la instancia y el componente
 `Microsoft.VisualStudio.Component.VC.Tools.x86.x64`, pero no satisface
@@ -119,29 +138,24 @@ un prerrequisito disponible ni prescribirse 19041 como versión obligatoria.
 
 La acción manual de toolchain asignada al propietario dentro del
 [issue #18](https://github.com/joputajones/tpv-abierto/issues/18) se completó:
-Build Tools y el SDK quedaron instalados. El issue permanece abierto hasta que
-la solución multiplataforma de PR #21 se revise y fusione. Codex no instaló
-componentes, no cambió el registro y no persistió variables de entorno.
+Build Tools y el SDK quedaron instalados. PR #21 se fusionó y #18 se cerró tras
+la repetición integrada sin Bash. Codex no instaló componentes, no cambió el
+registro y no persistió variables de entorno.
 
-Tras la reparación, ejecutar desde un Developer PowerShell o Developer Command
-Prompt:
+El procedimiento vigente desde un Developer PowerShell o Developer Command
+Prompt no requiere Bash:
 
 ```powershell
 & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all
 where.exe cl
 where.exe msbuild
-$originalPath = $env:Path
-try {
-  $env:Path = 'C:\Program Files\Git\bin;' + $env:Path
-  npm ci
-  npm run verify:electron
-  npm run build
-  npm run build:frontend
-  npm run test:upgrade-path
-  npm test
-} finally {
-  $env:Path = $originalPath
-}
+where.exe bash # No encontrarlo es válido.
+npm.cmd ci
+npm.cmd run verify:electron
+npm.cmd run build
+npm.cmd run build:frontend
+npm.cmd run test:upgrade-path
+npm.cmd test
 ```
 
 ### Auditoría de privacidad del diff
@@ -286,8 +300,9 @@ El repositorio contiene 76 archivos `*.test.*` bajo `tests/` y dos specs
 Playwright bajo `frontend/`. `package.json` define 72 scripts de prueba,
 incluido el agregador `npm test`.
 
-La suite agregada pasó al exponer Git Bash temporalmente en `PATH`. Cubre, entre
-otros:
+La repetición histórica de la suite pasó al exponer Git Bash temporalmente en
+`PATH`. PR #21 eliminó después ese requisito y la suite integrada se repitió sin
+Bash, como registra la tabla anterior. La suite cubre, entre otros:
 
 - Arranque de API y KDS y contrato REST/WebSocket.
 - CORS, autenticación, autorización por roles, logout y revalidación.

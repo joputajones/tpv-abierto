@@ -66,9 +66,11 @@ npm.cmd test
 ```
 
 The test aggregator preserves the established order, treats exit code 77 as
-an ABI-mismatch skip, and stops on the first real failure. The Windows
-portability evidence is tracked in
-[`joputajones/tpv-abierto#18`](https://github.com/joputajones/tpv-abierto/issues/18).
+an ABI-mismatch skip, and stops on the first real failure. The integrated
+Windows portability evidence is recorded in closed issue
+[`joputajones/tpv-abierto#18`](https://github.com/joputajones/tpv-abierto/issues/18)
+and PR #21. This evidence covers the development install/test path, not
+off-device restore, disaster recovery, physical hardware, or a restaurant pilot.
 The independent `test:reports-insights` regression was resolved in
 [`#20`](https://github.com/joputajones/tpv-abierto/issues/20). POSIX scripts
 used only by macOS or release maintenance remain valid, but they are not part
