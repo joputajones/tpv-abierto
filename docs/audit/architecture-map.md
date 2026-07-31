@@ -195,8 +195,12 @@ después contrasta `integrity_check`, `user_version`, `_flo_meta`, claves
 foráneas y dataset. Solo entonces inicializa otro `userData`, ejecuta
 `restoreBackup(..., true)`, reabre, avanza secuencias y persiste una segunda
 operación. El workflow dedicado transporta el paquete exclusivamente mediante
-un artifact desde un productor Windows a consumidores Windows y Linux. Mientras
-la PR esté en revisión, esa evidencia cross-runner sigue pendiente.
+un artifact desde un productor Windows a consumidores Windows y Linux. PR #35
+integró ese workflow: run 30671201413 ejecutó los tres jobs en máquinas
+efímeras distintas y todos verificaron el mismo SHA-256 de base
+`d2c4ee11c10544bcca43283266ab5e4d85dc0df467f91a21e296638845c1da95`.
+La evidencia queda limitada a `CI_CROSS_RUNNER`; no equivale a un segundo
+equipo físico ni a un operador independiente.
 
 La base no es todo el perfil de FloCafe. Quedan fuera `master-pin.enc`,
 `google-drive-token.enc`, la sesión/directorio de WhatsApp y los logs de

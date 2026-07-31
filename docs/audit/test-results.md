@@ -548,7 +548,7 @@ confianza para producción sigue limitada por cuatro ausencias:
    recuperación tras corrupción o concurrencia sostenida de varios
    comandero/KDS.
 
-## Validación de backup fuera del equipo — rama de revisión
+## Validación de backup fuera del equipo — integrada
 
 - Fecha: 2026-08-01
 - Rama: `test/off-device-backup-restore`
@@ -603,7 +603,64 @@ expectativas de tests que terminan con código 0, no fallos omitidos.
 El paquete local contiene exactamente cuatro archivos sintéticos y efímeros;
 el test borra productor, destinos y copias mutadas. Ninguna base, WAL/SHM, ZIP,
 checksum real, log o artifact se versiona. Esta ejecución prueba procesos y
-sandboxes separados en un host Windows (`SIM`). El workflow propuesto debe
-aportar todavía la transferencia real Windows→artifact→Windows/Linux para
-elevar la parte automatizada a `CI_CROSS_RUNNER`. La ejecución humana en otro
-equipo físico sigue sin realizarse.
+sandboxes separados en un host Windows (`SIM`). PR #35 integró después la
+transferencia real Windows→artifact→Windows/Linux y elevó solo la parte
+automatizada a `CI_CROSS_RUNNER`. La ejecución humana en otro equipo físico
+sigue sin realizarse.
+
+### Evidencia CI cross-runner y merge
+
+- PR técnica: [#35](https://github.com/joputajones/tpv-abierto/pull/35), head
+  protegido `64c86e4c0ce777ed1049701f061695bbc4174cd9`, merge commit
+  `4877d72e300b44ad88fe659f0b43a970fe92fd81`.
+- Workflow: run `30671201413`.
+- Productor Windows: job `91289109116`, PASS.
+- Consumidor Linux: job `91289484157`, PASS.
+- Consumidor Windows: job `91289484167`, PASS.
+- Artifact `synthetic-off-device-restore-v1`, ID `8808866260`, tamaño de
+  archivo `15277` bytes y retención de 3 días; no se publica como release.
+- Identidad común: schema `38`, app `2.4.7`, dataset
+  `synthetic-off-device-restore-v1`, tamaño `376832` bytes y SHA-256 de base
+  `d2c4ee11c10544bcca43283266ab5e4d85dc0df467f91a21e296638845c1da95`.
+- Los consumidores partieron de jobs/filesystems nuevos, descargaron solo el
+  artifact, verificaron el hash antes de abrir SQLite o crear el destino,
+  restauraron, reabrieron, escribieron un pedido/factura posterior y volvieron
+  a abrir con persistencia e integridad correctas.
+
+El artifact contiene exclusivamente los cuatro ficheros sintéticos permitidos.
+El digest del ZIP gestionado por GitHub
+`2c866213e53cd26e79f660423598b9e2baad9049c466893036e2683762723877` no se
+confunde con el SHA-256 anterior de `flo-backup.db`. Las anotaciones sobre
+acciones Node 20 forzadas a Node 24 y el servicio de caché de GitHub no
+afectaron la instalación ni se usaron como canal de transporte.
+
+### Validación posterior desde `main`
+
+Desde `4877d72`, `npm.cmd ci`, `test:off-device-restore`,
+`test:restart-recovery`, `test:backup`, `build`, `build:frontend` y `npm.cmd
+test` terminaron con código 0. La suite completa pasó los 68 scripts en 176,2
+s; R-01…R-12 pasaron con R-01 en 27,435 s; el frontend exportó 22 rutas. La
+instalación raíz informó una vulnerabilidad moderada y el aviso deprecado de
+`@types/bcryptjs`; no se cambiaron dependencias para esta validación.
+
+El push integrado ejecutó Off-device restore `30671483373` y CI
+`30671483318`, ambos PASS. Full Cross-Platform Matrix `30671483337` reprodujo
+en macOS un fallo anterior a PR #35: la prueba sin Bash ocultaba también
+`xattr` y `codesign`. PR #36 aisló el arreglo en el test, sin cambiar
+producción ni dependencias, y se fusionó con head protegido `d9920d7` como
+`5a8aa945`. La matriz manual `30672202465` sobre ese head pasó Ubuntu, Windows,
+macOS x64 y macOS arm64, incluidos build, 68 scripts y paquete de cada
+plataforma.
+
+El push de ese merge commit a `main` confirmó de nuevo CI `30672597277`,
+Off-device restore `30672597279` y Full Cross-Platform Matrix `30672597296`,
+los tres PASS. La última matriz ejecutó los cuatro targets desde el commit
+integrado, no desde la rama de la PR.
+
+### Clasificación final
+
+La creación portable, transferencia por artifact, restauración limpia en
+Windows/Linux y continuidad posterior son `DONE` a nivel `CI_CROSS_RUNNER`.
+La issue técnica #33 está cerrada. El procedimiento y la plantilla están
+versionados, pero la issue humana #34 sigue abierta y sin formulario real; por
+tanto R-011 permanece `PARTIAL` y M0 permanece `IN_PROGRESS`.
