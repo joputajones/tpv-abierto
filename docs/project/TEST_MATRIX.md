@@ -39,6 +39,7 @@ evidence alone.
 | `npm.cmd test` on integrated `main` | `DONE` | Exit 0 in 154.8 s without Bash after PR #28; all 66 scripts run, including those after migration backup |
 | `npm.cmd run test:migration-backup-fail-closed` | `DONE` | Integrated production initialization blocks checkpoint, destination/copy/open, integrity, version and finalization failures before v1; existing v0/zero-byte files require backup |
 | `npm.cmd run test:upgrade-path` | `DONE` | Integrated v0→v38 path creates a verified backup and passes integrity, FK, preservation, schema parity and idempotency |
+| `npm.cmd run test:restart-recovery` | `PARTIAL` | #30 branch passes R-01…R-12 on Windows in 33.0 s with owned child processes, disposable `userData`, WAL recovery and cleanup; pending Linux CI and merge |
 | `npm.cmd run build` | `PARTIAL` | TypeScript and runtime-asset copy pass |
 | `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; the current clean install reports 0 frontend vulnerabilities, while the historical 9-high result remains recorded |
 | `node dev-server.js` | `PARTIAL` | API/POS `:3001`, KDS `:3002`, health and HTML 200; synthetic order survived termination/restart |
@@ -64,6 +65,27 @@ and R-005 is `DONE` for the premigration scope only.
 | T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 66 scripts without Bash on Windows and passes the Linux core suite; #16, #18 and #20 are closed |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `DONE` | Integrated `main` blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification |
 
+## Controlled restart recovery — issue #30
+
+All entries below are evidence level `SIM`, not physical power-loss, hardware,
+off-device restore or restaurant evidence. Status remains `PARTIAL` until the
+branch is reviewed, passes Linux CI and is merged.
+
+| Case | Shutdown / recovery scenario | Branch result | Evidence / limitation |
+|---|---|---|---|
+| R-01 | Graceful shutdown without activity | `PARTIAL` | PASS locally: API/KDS health 200, exit 0, integrity/version and port reuse after reopen |
+| R-02 | Graceful shutdown after committed synthetic order and bill | `PARTIAL` | PASS locally: exactly one category, product, user, order and bill after reopen |
+| R-03 | Abrupt termination while idle | `PARTIAL` | PASS locally: only the owned child PID is forced; services and database reopen without intervention |
+| R-04 | Abrupt termination after committed WAL write | `PARTIAL` | PASS locally: non-empty WAL observed before kill; committed marker survives exactly once |
+| R-05 | Abrupt termination with `BEGIN IMMEDIATE` open | `PARTIAL` | PASS locally: uncommitted marker absent; prior commit intact |
+| R-06 | Commit followed by uncommitted operation | `PARTIAL` | PASS locally: first operation present, second absent |
+| R-07 | Sequence generation across restart | `PARTIAL` | PASS locally: two distinct monotonic production order numbers, no UNIQUE collision |
+| R-08 | Five alternating graceful/abrupt cycles | `PARTIAL` | PASS locally: five commits accumulated, both uncommitted rows absent, no lock or drift |
+| R-09 | Restart after sanitized v0→v38 upgrade | `PARTIAL` | PASS locally: migrations run once, one backup remains, rows/version stable across two reopens |
+| R-10 | API/KDS port release and reuse | `PARTIAL` | PASS locally on isolated non-3001/3002 ports after graceful and forced termination |
+| R-11 | WAL/SHM auxiliary state | `PARTIAL` | 18 states recorded; temporary presence accepted while integrity, exact rows and continued writes pass |
+| R-12 | Profile/process isolation | `PARTIAL` | Every DB path remains under one temp root; no logs or live children; sandbox removed in `finally` |
+
 ## Orders and concurrency
 
 | Test ID | Scenario | Required evidence | Status | M0 note |
@@ -71,8 +93,8 @@ and R-005 is `DONE` for the premigration scope only.
 | T-ORD-001 | Create a dine-in order on one client | `SIM` | `PARTIAL` | Automated order creation passes; restart probe used synthetic takeaway order |
 | T-ORD-002 | Add item and modifier after initial order | `SIM` | `PARTIAL` | Automated addon/order-item paths pass |
 | T-ORD-003 | Two clients update the same table in sequence | `SIM` + logs | `NOT_STARTED` | No two-client run |
-| T-ORD-004 | Restart application after accepting order | `SIM` | `PARTIAL` | Synthetic pending order survived process restart; graceful shutdown not evidenced |
-| T-ORD-005 | Abrupt process termination after accepted order | `SIM` | `PARTIAL` | Controlled process termination preserved the synthetic order; full Electron not used |
+| T-ORD-004 | Restart application after accepting order | `SIM` | `PARTIAL` | #30 branch preserves a committed synthetic order and bill through the real graceful DB/service cleanup; pending merge and not a full Electron window test |
+| T-ORD-005 | Abrupt process termination after accepted order | `SIM` | `PARTIAL` | #30 branch preserves commits and reverts open transactions after killing only an owned child; pending Linux CI and merge |
 | T-ORD-006 | Cancel/void flow preserves audit trail | `SIM` | `PARTIAL` | Automated cancel/override tests pass; no operator workflow evidence |
 
 ## Kitchen and printing

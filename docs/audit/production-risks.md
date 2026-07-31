@@ -13,6 +13,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 | --- | --- | --- | --- |
 | Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `DONE` | PR #28 integrada; el fallo histórico está reproducido y el camino actual bloquea antes de v1 hasta verificar la copia |
+| Reinicio graceful/abrupto sin matriz | CORE-002 / [#30](https://github.com/joputajones/tpv-abierto/issues/30) | `PARTIAL` | R-01…R-12 pasan localmente en la rama con datos/procesos temporales; falta revisión, Linux CI y merge |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
 | API LAN sin TLS y sandbox reducido | R-019 | `PARTIAL` | Bind real confirmado; sin campaña LAN hostil |
 | Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 66 scripts repetidos desde `main` sin Bash. Restore externo y desastre siguen en R-011 |
@@ -97,6 +98,23 @@ ser válidos tras reinicio hasta expirar (24 h o 10 días con “recordarme”).
 limite los puertos a subred/dispositivos necesarios, credenciales individuales,
 sin red de invitados y con rotación de sesiones. Diseñar TLS local o un canal
 de emparejado seguro antes de despliegues no controlados.
+
+## P1 — Reinicio local simulado; corte físico no demostrado
+
+**Evidencia en revisión:** la rama de #30 abre la base de producción bajo un
+`userData` temporal, confirma operaciones en WAL, deja otras bajo
+`BEGIN IMMEDIATE`, alterna cierres graceful y terminaciones forzadas, reinicia
+API/KDS en puertos aislados y repite un upgrade saneado. R-01…R-12 pasan en
+Windows, incluido `integrity_check=ok`, versión v38, FK limpias para las bases
+sintéticas, secuencias sin colisión, rollback de filas no confirmadas y
+reutilización de puertos. Una expectativa invertida en R-05 hace fallar el
+arnés y aun así limpia procesos y sandbox.
+
+**Límite:** `taskkill`/`SIGKILL` simula la muerte del proceso, no un corte de
+alimentación. No prueba cachés del disco, corrupción, antivirus, pérdida del
+equipo, restore externo, hardware, LAN hostil ni operación real. Hasta que la
+PR pase Linux CI y se fusione, CORE-002 continúa `PARTIAL`; después seguirá sin
+ser evidencia `BENCH` o `PILOT` y R-011 permanecerá abierto.
 
 ## P1 — Portabilidad Windows mitigada; recuperación externa pendiente
 

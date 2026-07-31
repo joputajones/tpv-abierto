@@ -107,6 +107,62 @@ La CI de PR #28 pasó `changes`, invariante fiscal, `dependency-review`,
 barrera premigración local; M0 continúa `IN_PROGRESS` y la recuperación externa
 o ante pérdida total sigue fuera de esta evidencia.
 
+### Matriz de reinicio #30 antes del merge
+
+Base inicial: `1b928c05985888210492323d640528026adb76ce`. Entorno: Windows 10
+`10.0.19045`, PowerShell, Node `v22.20.0`, npm `10.9.3`, sin Bash en el PATH.
+La issue [#30](https://github.com/joputajones/tpv-abierto/issues/30) contiene el
+alcance y los criterios. El arnés usa procesos Electron-as-Node, PIDs propios,
+directorios temporales, puertos efímeros y la fixture histórica saneada sin
+modificarla. No lee el perfil real ni inicia cloud, telemetría, mDNS, updater,
+impresión o ventana.
+
+| Caso | Tipo | Resultado local | Evidencia principal |
+| --- | --- | --- | --- |
+| R-01 | Graceful | PASS, 5,5 s | API/KDS 200, salida 0, reapertura, escritura y puertos reutilizables |
+| R-02 | Graceful + commit | PASS, 1,2 s | Orden/factura y maestros sintéticos presentes exactamente una vez |
+| R-03 | Abrupto en reposo | PASS, 5,7 s | Reapertura inmediata de DB/API/KDS sin intervención |
+| R-04 | Abrupto tras commit WAL | PASS, 1,2 s | WAL no vacío antes del kill; commit presente una vez |
+| R-05 | Abrupto con transacción abierta | PASS, 1,2 s | Fila no confirmada ausente; baseline conservado |
+| R-06 | Commit + no commit | PASS, 1,3 s | Primera operación presente; segunda ausente |
+| R-07 | Secuencia | PASS, 1,3 s | Números distintos y monotónicos, sin colisión |
+| R-08 | Cinco ciclos alternos | PASS, 3,8 s | Cinco commits, dos rollbacks, sin bloqueo o drift |
+| R-09 | Upgrade + dos reopens | PASS, 1,8 s | v0→v38 una vez, un backup, filas y versión estables |
+| R-10 | Puertos | PASS, 8,6 s | API/KDS reutilizados tras graceful y `taskkill` |
+| R-11 | WAL/SHM | PASS | 18 observaciones; presencia temporal no penalizada |
+| R-12 | Aislamiento | PASS | Ningún hijo vivo/log; todas las rutas bajo sandbox eliminado |
+
+La repetición verde terminó en 33,0 s. El experimento de falso positivo cambió
+temporalmente R-05 para esperar la fila no confirmada: terminó con código 1,
+mostró `0 !== 1` bajo R-05, ejecutó `Cleanup PASS` y dejó cero directorios. La
+expectativa se revirtió y la matriz volvió a pasar. La evidencia permanece
+`PARTIAL` hasta revisión, Linux CI y merge; es `SIM`, no corte eléctrico,
+disaster recovery, hardware, LAN hostil, operación real ni fiscalidad.
+
+La validación completa de la rama se ejecutó en PowerShell normal. Los errores
+que la suite imprime al probar cloud no registrado, pagos inválidos, facturas
+inexistentes y JSON corrupto son expectativas negativas comprobadas; el runner
+terminó correctamente y continuó hasta el script 67.
+
+| Comando | Código | Duración | Resultado |
+| --- | ---: | ---: | --- |
+| `where.exe bash` | 1 | 0,1 s | Bash ausente, como se esperaba |
+| `npm.cmd ci` | 0 | 31,9 s | 648 paquetes; rebuild nativo y Electron correctos; 1 advisory moderada raíz y aviso de `@types/bcryptjs` deprecado |
+| `npm.cmd run test:restart-recovery` | 0 | 53,0 s | R-01…R-12, 18 estados WAL/SHM y limpieza final correctos |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 | 1,8 s | La barrera premigración sigue fail-closed |
+| `npm.cmd run test:upgrade-path` | 0 | 1,7 s | v0→v38, conservación, integridad e idempotencia |
+| `npm.cmd run test:backup` | 0 | 1,0 s | 10/10 |
+| `npm.cmd run test:schema-health` | 0 | 1,6 s | Salud, deriva y reparaciones seguras correctas |
+| `npm.cmd run test:cross-platform-scripts` | 0 | 0,8 s | Agregador actualizado a 67 scripts |
+| `npm.cmd run lint` | 0 | 27,2 s | 0 errores; 676 avisos backend preexistentes; frontend limpio |
+| `npm.cmd run build` | 0 | 13,8 s | TypeScript y assets correctos |
+| `npm.cmd run build:frontend` | 0 | 51,3 s | Next 16.2.12 exporta 22 rutas; el `npm ci` interno informa 0 vulnerabilidades |
+| `npm.cmd test` | 0 | 176,5 s | Los 67 scripts terminaron sin Bash |
+
+No se modificó producción, esquema, migraciones, dependencias, lockfiles,
+workflows ni licencia. El arnés eliminó sus directorios temporales y no dejó
+procesos, listeners, bases ni logs fuera de su sandbox.
+
 ### Validación histórica posterior a la reparación administrativa
 
 Build Tools 2019 ahora informa `isComplete=true`, `isLaunchable=true`,
