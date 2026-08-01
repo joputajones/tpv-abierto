@@ -313,7 +313,10 @@ Un segundo proceso Electron real y oculto carga el frontend; CSP y
 `session.webRequest` bloquean sus sondas HTTPS/WSS externas. O-13 inventaría
 los recursos runtime de todos los HTML exportados y carga raíz, login, setup,
 POS, KDS standalone y ajustes; los enlaces externos de activación manual se
-clasifican aparte. La reconexión O-15
+clasifican aparte. Tras una redirección cliente, el probe espera hasta 10 s y
+exige DOM completo, URL final loopback y contenido visible no vacío. PR #44
+también ejecuta la suite completa Linux bajo Xvfb, manteniendo la ejecución
+ordinaria en Windows y macOS. La reconexión O-15
 no abre Internet: mapea un único hostname sintético a un servidor HTTP loopback
 y hace que la outbox real reintente sin reiniciar el TPV.
 
@@ -333,6 +336,7 @@ La ejecución local observó 9 intentos: 7 bloqueados y 2 redirigidos al simulad
 loopback aprobado, 0 conexiones Internet exitosas y 0 ms de fallo registrado
 frente al límite de 250 ms. Esto no acredita LAN entre dispositivos, impresoras,
 teléfonos, corte físico de red o electricidad, larga duración, operación real ni
-fiscalidad. PR #41 y #42 están fusionadas, los jobs Windows/Ubuntu y Linux
-baseline pasan, y la secuencia post-merge de `main` pasa desde `a05cc79`.
+fiscalidad. PR #41, #42 y #44 están fusionadas. El run post-merge
+`30711604415` pasa suite y empaquetado en Ubuntu, Windows, macOS x64 y macOS
+arm64; CI y restore integrados también pasan desde `a6724c56`.
 CORE-004 es `DONE` solo a nivel `SIM/CI`; R-011 y R-018 permanecen `PARTIAL`.
