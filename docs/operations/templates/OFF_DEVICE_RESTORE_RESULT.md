@@ -2,6 +2,8 @@
 
 No adjuntes la base de datos ni incluyas datos personales, credenciales, rutas de usuario o información identificable del restaurante.
 
+No calcules los campos de checksum y tiempo. Copia las cuatro líneas que imprime el primer bloque de PowerShell y las tres que imprime el bloque final de la guía. Déjalos vacíos hasta realizar el simulacro.
+
 ```text
 Fecha:
 Operador:
@@ -15,8 +17,9 @@ Nombre del backup:
 SHA-256 esperado:
 SHA-256 observado:
 ¿Checksum verificado antes de abrir?:
-Hora de inicio:
-Hora de fin:
+Tiempo de comprobación SHA-256:
+Hora de inicio de restauración:
+Hora de fin de restauración:
 Tiempo de restauración:
 Datos verificados:
 Operación posterior creada:
