@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { getNpmInvocation, runCommand, signalExitCode } = require('../scripts/process-runner.cjs');
 const { TEST_SCRIPTS, runTestScripts } = require('./run-tests.cjs');
+const packageJson = require('../package.json');
 
 async function main() {
   const windowsNpmCli = 'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js';
@@ -57,6 +58,11 @@ async function main() {
   assert.equal(TEST_SCRIPTS[0], 'test:smoke');
   assert.equal(TEST_SCRIPTS.at(-2), 'test:dev-tooling');
   assert.equal(TEST_SCRIPTS.at(-1), 'test:cross-platform-scripts');
+  assert.equal(
+    packageJson.scripts['test:full-offline-operation'],
+    'node tests/full-offline-operation.test.cjs',
+    'the coordinator must run under Node and launch Electron explicitly',
+  );
 
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
   const noBashPathEntries = [path.dirname(process.execPath)];
