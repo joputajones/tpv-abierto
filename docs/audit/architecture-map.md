@@ -266,7 +266,7 @@ tipo de evento y payload. Emite `app_launch`, un `daily_ping` como máximo cada
 24 horas y comprueba la periodicidad cada hora. La función de envío consulta
 `telemetry_enabled`.
 
-La rama de #40 corrige una inconsistencia de primera instalación detectada por
+PR #41 corrige una inconsistencia de primera instalación detectada por
 O-01: `seedInstallDefaults()` sembraba `anonymous_data_consent=true` y
 `telemetry_enabled=true`, por lo que `telemetry.start()` podía intentar enviar
 antes de completar el wizard. Los defaults de base nueva son ahora `false`,
@@ -293,10 +293,13 @@ La actualización automática:
 - El instalador Windows actual se publica sin firma; macOS directo se configura
   para firma y notarización.
 
-## Arnés de operación offline (#40, evidencia provisional)
+## Arnés de operación offline (#40, integrado a nivel SIM/CI)
 
 `tests/offline-network-guard.cjs` se instala antes de cargar los servicios en
-un proceso Electron hijo ejecutado en modo Node. Intercepta `fetch`, HTTP,
+un proceso Electron hijo ejecutado en modo Node. El coordinador se ejecuta con
+Node y resuelve explícitamente el binario Electron para el worker y el renderer;
+PR #42 eliminó un bloqueo reproducible del anterior Electron anidado en Windows.
+El guard intercepta `fetch`, HTTP,
 HTTPS, DNS, TCP, TLS y el constructor de `ws`; rechaza todo destino que no sea
 loopback y registra solo protocolo, host saneado, puerto, servicio y resultado.
 El API/KDS real puede conservar su bind `0.0.0.0` porque esa dirección no permite
@@ -330,4 +333,6 @@ La ejecución local observó 9 intentos: 7 bloqueados y 2 redirigidos al simulad
 loopback aprobado, 0 conexiones Internet exitosas y 0 ms de fallo registrado
 frente al límite de 250 ms. Esto no acredita LAN entre dispositivos, impresoras,
 teléfonos, corte físico de red o electricidad, larga duración, operación real ni
-fiscalidad. Hasta merge y CI Windows/Linux, CORE-004 permanece `PARTIAL`.
+fiscalidad. PR #41 y #42 están fusionadas, los jobs Windows/Ubuntu y Linux
+baseline pasan, y la secuencia post-merge de `main` pasa desde `a05cc79`.
+CORE-004 es `DONE` solo a nivel `SIM/CI`; R-011 y R-018 permanecen `PARTIAL`.

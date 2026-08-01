@@ -782,8 +782,71 @@ la UI con una dependencia externa. La nueva repetición CI queda pendiente.
 | Primer intento orquestado de `npm.cmd test` | interrumpido / 4,4 s | El límite externo de 1 s cerró stdout y causó `EPIPE`; no se clasifica como resultado del repositorio |
 | Repetición verificable de `npm.cmd test` | 0 / 198,5 s | 69/69 scripts PASS sin Bash; las trazas de error son casos negativos deliberados |
 
-La instalación limpia, las pruebas específicas de reinicio/backup/migración,
-lint, ambos builds y los 69 scripts ya han pasado localmente. No quedaron
-listeners en 3001/3002 ni procesos del repositorio tras la ejecución. Pendientes:
-revisión final del diff, PR, Windows/Linux CI y merge. CORE-004 permanece
-`PARTIAL`, R-011 y R-018 permanecen `PARTIAL` y M0 continúa `IN_PROGRESS`.
+En ese punto, la instalación limpia, las pruebas específicas de reinicio/
+backup/migración, lint, ambos builds y los 69 scripts habían pasado localmente.
+No quedaron listeners en 3001/3002 ni procesos del repositorio. La clasificación
+seguía provisional a la espera de CI y merge; los resultados posteriores se
+registran a continuación.
+
+### CI y merge de la PR #41
+
+La tercera ejecución CI sobre head protegido `5909e55` pasó los diez checks:
+dependency review, cambios, invariante fiscal, Playwright, Linux baseline,
+offline Windows/Ubuntu, productor de backup y restauración Windows/Ubuntu.
+Los runs fueron `30708876792` (CI) y `30708876787` (restore). No hubo
+`continue-on-error`, reviews ni conversaciones pendientes. PR #41 se fusionó
+como `4961cb22161faaa3cab8ed22a5ed57e9d989d0ed` y #40 se cerró inicialmente.
+
+### Fallo post-merge conservado y PR correctiva #42
+
+La primera validación integrada de `4961cb2` encontró un defecto reproducible
+del arnés inmediatamente después de la instalación limpia:
+
+| Comando / diagnóstico | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd ci` | 0 / 56,2 s | 648 paquetes, rebuild Electron correcto, 1 vulnerabilidad moderada raíz y aviso `@types/bcryptjs` |
+| `npm.cmd run test:full-offline-operation` | 1 / 99,9 s | O-01 agotó 60 s; worker vivo sin stdout/stderr |
+| repetición de la matriz | 1 / 86,7 s | Mismo timeout O-01; #40 se reabrió y CORE-004 siguió `PARTIAL` |
+| `npm.cmd run test:smoke` | 0 / 26,3 s | Electron, `better-sqlite3`, migraciones y servidores sanos |
+| coordinador ejecutado directamente con Node | 1 / 31,0 s | O-01…O-12 PASS; O-13 reveló correctamente que `process.execPath` era Node y no Electron |
+
+La causa era el coordinador ejecutándose como Electron-as-Node y lanzando otro
+Electron mediante `process.execPath`; ese proceso anidado quedaba bloqueado en
+este Windows. PR #42 ejecuta el coordinador con Node y resuelve explícitamente
+el binario Electron para worker y renderer. El false-positive probe sigue como
+Node. No cambió producción, dependencias, lockfiles, esquema, migraciones,
+licencia ni marca.
+
+Validación local de `9bc6f74`:
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:cross-platform-scripts` | 0 / 1,9 s | Impide reintroducir el coordinador Electron anidado |
+| `npm.cmd run test:full-offline-operation` | 0 / 29,1 s | O-01…O-16 + O-FP PASS |
+| `npm.cmd run lint` | 0 / 60,2 s | 0 errores; 676 advertencias heredadas |
+| `npm.cmd run build` | 0 / 28,1 s | PASS |
+| `npm.cmd run build:frontend` | 0 / 105,4 s | 22 rutas; 0 vulnerabilidades frontend |
+| `npm.cmd test` | 0 / 372,9 s | 69/69 PASS |
+
+PR #42 pasó sus diez checks en los runs `30709810490` y `30709810483`,
+incluidos offline Windows/Ubuntu y Linux baseline, y se fusionó como
+`a05cc79044ec5b59503795107bcee3af1ae2d34b`. #40 volvió a cerrarse mediante
+`Closes #40`.
+
+### Validación integrada final desde `main`
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd ci` | 0 / 85,2 s | 648 paquetes y módulo nativo correctos; 1 vulnerabilidad moderada raíz, 127 funding y aviso deprecado conocidos |
+| `npm.cmd run test:full-offline-operation` | 0 / 84,5 s | O-01…O-16 + O-FP PASS; O-01 tardó 57,715 s tras el `ci` frío; 9 intentos, 7 bloqueos, 2 loopback aprobados, 0 Internet exitosos, máximo 0 ms/250 ms |
+| `npm.cmd run test:restart-recovery` | 0 / 68,0 s | R-01…R-12 PASS, 18 observaciones WAL/SHM y limpieza; evidencia `SIM`, no corte eléctrico |
+| `npm.cmd run build` | 0 / 45,3 s | TypeScript y assets PASS |
+| `npm.cmd run build:frontend` | 0 / 129,3 s | 22 rutas estáticas, 0 vulnerabilidades frontend |
+| `npm.cmd test` | 0 / 329,6 s | 69/69 scripts PASS sin Bash |
+
+No quedaron listeners en 3001/3002, procesos del repositorio ni artefactos de
+datos versionados. CORE-004 queda `DONE` exclusivamente a nivel `SIM/CI`.
+R-011 y R-018 permanecen `PARTIAL`; #34 conserva su cierre con limitaciones,
+#39 permanece abierta y M0 continúa `IN_PROGRESS`. No se acredita desconexión
+física, LAN hostil/multidispositivo, impresoras, teléfonos, un turno completo,
+operación real de restaurante ni cumplimiento fiscal.
