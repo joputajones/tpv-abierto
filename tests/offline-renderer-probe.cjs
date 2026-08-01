@@ -103,7 +103,7 @@ async function main() {
         requested: pathname,
         status: routeResponse?.statusCode ?? 200,
         finalUrl: window.webContents.getURL(),
-        bodyLength: await window.webContents.executeJavaScript('document.body ? document.body.innerText.length : 0'),
+        readyState: await window.webContents.executeJavaScript('document.readyState'),
       });
     }
     result = {

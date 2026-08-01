@@ -762,6 +762,26 @@ suite que contiene el renderer oculto bajo el X virtual ya disponible en el
 runner (`xvfb-run`), sin añadir paquetes o dependencias del producto. La
 repetición CI permanece pendiente; los dos fallos iniciales no se ocultan.
 
+En la segunda ejecución, el job offline dedicado de Ubuntu pasó completo, pero
+`linux-baseline` repitió O-13 dentro de los 69 scripts y encontró una aserción
+inestable del arnés: una ruta protegida estaba en una redirección cliente y su
+texto era temporalmente vacío aunque el documento local había cargado. Se
+mantuvo la exigencia de contenido visible en la raíz y, para cada ruta, se
+sustituyó `bodyLength > 0` por HTTP 200, DOM `complete` y URL final loopback.
+Esto conserva la prueba de carga local sin confundir un estado transitorio de
+la UI con una dependencia externa. La nueva repetición CI queda pendiente.
+
+### Validación local del ajuste tras la segunda ejecución CI
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:full-offline-operation` | 0 / 22,8 s | O-01…O-16 y O-FP PASS con la aserción estable de rutas protegidas |
+| `npm.cmd run lint` | 0 / 46,5 s | Cero errores; 676 advertencias heredadas |
+| `npm.cmd run build` | 0 / 25,4 s | PASS |
+| `npm.cmd run build:frontend` | 0 / 114,7 s | 22 páginas estáticas, 0 vulnerabilidades frontend |
+| Primer intento orquestado de `npm.cmd test` | interrumpido / 4,4 s | El límite externo de 1 s cerró stdout y causó `EPIPE`; no se clasifica como resultado del repositorio |
+| Repetición verificable de `npm.cmd test` | 0 / 198,5 s | 69/69 scripts PASS sin Bash; las trazas de error son casos negativos deliberados |
+
 La instalación limpia, las pruebas específicas de reinicio/backup/migración,
 lint, ambos builds y los 69 scripts ya han pasado localmente. No quedaron
 listeners en 3001/3002 ni procesos del repositorio tras la ejecución. Pendientes:

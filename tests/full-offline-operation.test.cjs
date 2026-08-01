@@ -486,13 +486,20 @@ async function main() {
       assert.ok(resources.statuses.every((status) => status === 200));
       rendererEvidence = await runRendererProbe({ apiPort: ports.apiPort, userDataPath: rendererUserDataPath });
       assert.equal(rendererEvidence.renderer.health, 200);
+      assert.equal(rendererEvidence.renderer.readyState, 'complete');
+      assert.ok(rendererEvidence.renderer.bodyLength > 0, 'root renderer must contain visible local content');
       assert.equal(rendererEvidence.renderer.externalFetch, 'blocked');
       assert.equal(rendererEvidence.renderer.externalWebSocket, 'blocked');
       assert.equal(rendererEvidence.successfulExternalConnections, 0);
       assert.equal(rendererEvidence.visibleWindows, 0);
       assert.deepEqual(rendererEvidence.routes.map((route) => route.requested),
         ['/auth/login/', '/setup/', '/pos/', '/kds-standalone/', '/settings/']);
-      assert.ok(rendererEvidence.routes.every((route) => route.status === 200 && route.bodyLength > 0));
+      for (const route of rendererEvidence.routes) {
+        assert.equal(route.status, 200, `${route.requested} must load from the local server`);
+        assert.equal(route.readyState, 'complete', `${route.requested} DOM must finish loading`);
+        assert.ok(route.finalUrl.startsWith(`http://127.0.0.1:${ports.apiPort}/`),
+          `${route.requested} must remain on loopback; final URL was ${route.finalUrl}`);
+      }
       return { resources, renderer: rendererEvidence };
     });
 
