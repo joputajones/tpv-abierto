@@ -39,14 +39,35 @@ No borres la copia de origen y no uses una carpeta de backups del mismo disco co
 
 ## 3. Verificar SHA-256 antes de abrir
 
-Desde PowerShell, situado en la carpeta del paquete:
+No hace falta calcular ni comparar nada a mano. En el Explorador de archivos:
+
+1. Abre la carpeta donde has copiado el paquete.
+2. Haz clic en la barra de direcciones, escribe `powershell` y pulsa **Intro**.
+3. Copia y pega completo el siguiente bloque en la ventana azul y pulsa **Intro**:
 
 ```powershell
+$checksumStart = Get-Date
+$requiredFiles = @('flo-backup.db', 'manifest.json', 'SHA256SUMS', 'RESTORE-INSTRUCTIONS.md')
+$actualFiles = @(Get-ChildItem -LiteralPath . -File | ForEach-Object { $_.Name })
+$missingFiles = @($requiredFiles | Where-Object { $_ -notin $actualFiles })
+$extraFiles = @($actualFiles | Where-Object { $_ -notin $requiredFiles })
+if ($missingFiles.Count -gt 0 -or $extraFiles.Count -gt 0) {
+  throw "PAQUETE INCOMPLETO O CON ARCHIVOS EXTRA: no abras ni restaures esta copia"
+}
 $expected = ((Get-Content -LiteralPath .\SHA256SUMS -Raw) -split '\s+')[0].ToLowerInvariant()
 $observed = (Get-FileHash -LiteralPath .\flo-backup.db -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($expected -ne $observed) { throw "CHECKSUM INCORRECTO: no abras ni restaures esta copia" }
-"SHA-256 correcto: $observed"
+$manifest = Get-Content -LiteralPath .\manifest.json -Raw | ConvertFrom-Json
+if ($expected -ne $observed -or $manifest.sha256.ToLowerInvariant() -ne $observed -or [int64]$manifest.sizeBytes -ne (Get-Item -LiteralPath .\flo-backup.db).Length) {
+  throw "CHECKSUM INCORRECTO: no abras ni restaures esta copia"
+}
+$checksumElapsed = (Get-Date) - $checksumStart
+"SHA-256 esperado: $expected"
+"SHA-256 observado: $observed"
+"¿Checksum verificado antes de abrir?: Sí"
+"Tiempo de comprobación SHA-256: $([Math]::Round($checksumElapsed.TotalSeconds, 2)) segundos"
 ```
+
+Si aparecen esas cuatro líneas sin texto rojo, cópialas tal cual al formulario. Si aparece `CHECKSUM INCORRECTO`, no abras la base, no escribas `Sí` y detente. Mantén esta ventana de PowerShell abierta o minimizada: se reutilizará para medir la restauración.
 
 En Linux o macOS, si `sha256sum` está disponible:
 
@@ -54,7 +75,7 @@ En Linux o macOS, si `sha256sum` está disponible:
 sha256sum --check SHA256SUMS
 ```
 
-Compara también el valor con `sha256` de `manifest.json`. Los tres valores deben coincidir. Si falta un archivo, aparece un archivo adicional o cualquier hash difiere, detente: no abras SQLite, no inicies la restauración y registra `FAIL`.
+El bloque también compara el valor con `sha256` de `manifest.json`. Los tres valores deben coincidir. Si falta un archivo, aparece un archivo adicional o cualquier hash difiere, detente: no abras SQLite, no inicies la restauración y registra `FAIL`.
 
 ## 4. Abrir una instalación limpia
 
@@ -67,11 +88,18 @@ El PIN maestro, el token de Google Drive, la sesión de WhatsApp y los logs vive
 
 ## 5. Restaurar mediante la interfaz
 
-1. Abre **Ajustes → Herramientas de base de datos**.
-2. Selecciona **Restaurar**, introduce el PIN maestro local del equipo de recuperación y elige `flo-backup.db` de la carpeta verificada.
-3. Si FloCafe avisa de una versión de esquema distinta, no continúes el simulacro ciego. Registra el mensaje y solicita revisión técnica; el modo de restauración parcial entre versiones tiene límites distintos.
-4. Espera el mensaje de éxito y el reinicio de la aplicación. No desconectes el medio ni cierres el proceso durante la operación.
-5. Cierra FloCafe de forma normal y vuelve a abrirlo.
+1. Abre **Ajustes → Herramientas de base de datos**, pero todavía no selecciones **Restaurar**.
+2. Vuelve a la misma ventana de PowerShell, pega este bloque y pulsa **Intro**:
+
+```powershell
+$restoreStart = Get-Date
+"Hora de inicio de restauración: $($restoreStart.ToString('yyyy-MM-dd HH:mm:ss'))"
+```
+
+3. Regresa inmediatamente a FloCafe, selecciona **Restaurar**, introduce el PIN maestro local del equipo de recuperación y elige `flo-backup.db` de la carpeta verificada.
+4. Si FloCafe avisa de una versión de esquema distinta, no continúes el simulacro ciego. Registra el mensaje y solicita revisión técnica; el modo de restauración parcial entre versiones tiene límites distintos.
+5. Espera el mensaje de éxito y el reinicio de la aplicación. No desconectes el medio ni cierres el proceso durante la operación.
+6. Cierra FloCafe de forma normal y vuelve a abrirlo.
 
 ## 6. Verificar el resultado
 
@@ -86,12 +114,25 @@ Sin modificar los datos originales, confirma al menos:
 
 No pruebes impresión, cajón, KDS físico, cloud ni cumplimiento fiscal como parte de este simulacro: requieren aceptaciones separadas.
 
+Cuando hayas terminado todas esas comprobaciones, vuelve a la misma ventana de PowerShell, pega este bloque y pulsa **Intro**:
+
+```powershell
+$restoreEnd = Get-Date
+$restoreElapsed = $restoreEnd - $restoreStart
+"Hora de inicio de restauración: $($restoreStart.ToString('yyyy-MM-dd HH:mm:ss'))"
+"Hora de fin de restauración: $($restoreEnd.ToString('yyyy-MM-dd HH:mm:ss'))"
+('Tiempo de restauración: {0:hh\:mm\:ss}' -f $restoreElapsed)
+```
+
+Copia esas tres líneas al formulario. El tiempo incluye la restauración, la reapertura, la comprobación de datos y la operación posterior. Si cerraste PowerShell y perdiste `$restoreStart`, escribe `No disponible: se cerró el cronómetro` y marca el resultado `PARTIAL`; no inventes ni calcules una hora aproximada.
+
 ## 7. Registrar y devolver evidencia
 
-1. Cronometra desde el inicio de la restauración hasta que los datos estén verificados.
-2. Copia la plantilla a un archivo de trabajo privado y rellena todos los campos.
-3. No escribas nombres reales, correos, teléfonos, direcciones, importes identificables ni rutas de usuario en el repositorio público.
-4. Devuelve el formulario al mantenedor por el canal acordado junto con el SHA-256, versión, resultado y errores saneados. No adjuntes la base.
+1. Copia la plantilla a un archivo de trabajo privado y ábrelo con un editor de texto, por ejemplo Bloc de notas.
+2. Sustituye las siete líneas vacías correspondientes por las cuatro líneas del bloque de checksum y las tres líneas del bloque final. No calcules esos campos a mano.
+3. Rellena los demás campos.
+4. No escribas nombres reales, correos, teléfonos, direcciones, importes identificables ni rutas de usuario en el repositorio público.
+5. Devuelve el formulario al mantenedor por el canal acordado junto con el SHA-256, versión, resultado y errores saneados. No adjuntes la base.
 
 ## Si algo falla
 
