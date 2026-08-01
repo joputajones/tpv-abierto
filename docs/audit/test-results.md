@@ -666,7 +666,7 @@ aceptación funcional limitada: hubo otra persona/equipo y restauración visible
 pero no se completaron todas las comprobaciones técnicas. #39 conserva la
 deuda de usabilidad; R-011 permanece `PARTIAL` y M0 `IN_PROGRESS`.
 
-## Operación completa sin Internet — evidencia provisional de rama
+## Operación completa sin Internet — evidencia de rama e integración
 
 - Fecha: 2026-08-01.
 - Rama: `test/full-offline-operation`.
@@ -850,3 +850,62 @@ R-011 y R-018 permanecen `PARTIAL`; #34 conserva su cierre con limitaciones,
 #39 permanece abierta y M0 continúa `IN_PROGRESS`. No se acredita desconexión
 física, LAN hostil/multidispositivo, impresoras, teléfonos, un turno completo,
 operación real de restaurante ni cumplimiento fiscal.
+
+### Hallazgo posterior en la matriz completa y corrección PR #44
+
+La revisión de los workflows de `main` encontró una evidencia roja que no debe
+quedar oculta. El run Full Cross-Platform Matrix `30710043950` sobre
+`a05cc79044ec5b59503795107bcee3af1ae2d34b` falló aunque CI normal, restore y
+la secuencia local integrada habían pasado:
+
+- macOS x64: PASS;
+- macOS arm64 y Windows: O-13 leyó transitoriamente un `body` vacío durante la
+  redirección cliente de una ruta protegida;
+- Ubuntu: el workflow completo arrancó Electron sin display GTK, fuera de
+  `xvfb-run`.
+
+El mismo defecto reapareció en el run documental `30710893454`. #40 se reabrió
+y CORE-004 volvió provisionalmente a `PARTIAL`. PR #44 no relajó la comprobación:
+O-13 espera como máximo 10 s a que termine la redirección y exige DOM completo,
+URL final loopback y contenido visible no vacío. El workflow ejecuta la suite
+Linux bajo Xvfb y conserva la ejecución ordinaria en Windows/macOS. No cambió
+producción, dependencias, lockfiles, esquema, migraciones, licencia ni marca.
+
+Validación local de `1d1d7e2` antes del merge:
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:full-offline-operation` (repetición 1) | 0 / 25,1 s | O-01…O-16 + O-FP PASS |
+| `npm.cmd run test:full-offline-operation` (repetición 2) | 0 / 23,7 s | O-01…O-16 + O-FP PASS |
+| `npm.cmd run test:cross-platform-scripts` | 0 / 1,9 s | PASS |
+| `npm.cmd run test:release-config` | 0 | PASS |
+| `npm.cmd run lint` | 0 / 59,2 s | 0 errores; 676 advertencias heredadas |
+| `npm.cmd run build` | 0 / 29,9 s | PASS |
+| `npm.cmd run build:frontend` | 0 / 80,2 s | 22 rutas; 0 vulnerabilidades frontend |
+| `npm.cmd test` | 0 / 291,3 s | 69/69 PASS |
+
+El run manual Full Cross-Platform Matrix `30711336203` sobre ese head pasó
+suite y empaquetado sin instalador en Ubuntu, Windows, macOS x64 y macOS arm64.
+Los diez checks aplicables de la PR pasaron y PR #44 se fusionó como
+`a6724c56ba3f43917618d3470850f9d69bc928bb`.
+
+### Validación posterior definitiva desde `main`
+
+| Evidencia | Resultado |
+|---|---|
+| `npm.cmd run test:full-offline-operation` | Código 0 / 28,5 s; O-01…O-16 + O-FP PASS, 9 intentos, 7 bloqueados, 2 loopback aprobados, 0 Internet exitosos, máximo 0 ms/250 ms |
+| `npm.cmd test` | Código 0 / 348,2 s; 69/69 scripts PASS sin Bash; las trazas de errores funcionales son expectativas negativas deliberadas |
+| CI `30711604398` | PASS: Linux baseline, Playwright, offline Ubuntu/Windows e invariante fiscal; dependency review se omite correctamente en push sin PR |
+| Off-device restore `30711604457` | PASS: productor Windows y restores independientes Windows/Ubuntu |
+| Full Cross-Platform Matrix `30711604415` | PASS: suite completa, build y empaquetado sin instalador en Ubuntu, Windows, macOS x64 y macOS arm64 |
+
+La matriz completa emitió avisos no bloqueantes: varias acciones de GitHub aún
+declaran runtime Node 20 y el runner las fuerza a Node 24; además, el servicio
+de caché devolvió errores 400/indisponibilidad temporal en Ubuntu y macOS. La
+instalación, pruebas, builds y artifacts terminaron correctamente sin depender
+de esa caché. #40 está cerrada como `COMPLETED`.
+
+CORE-004 vuelve a `DONE` exclusivamente a nivel `SIM/CI`. R-011 y R-018 siguen
+`PARTIAL`, #39 sigue abierta y M0 continúa `IN_PROGRESS`. La evidencia no se
+extiende a desconexión física, LAN hostil, hardware, móviles, turno completo,
+restaurante real, cloud real ni cumplimiento fiscal.

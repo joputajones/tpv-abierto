@@ -68,9 +68,11 @@ recovery assistant is tracked in open issue
 [#39](https://github.com/joputajones/tpv-abierto/issues/39).
 
 Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) is closed by
-PR #41 and corrective PR #42. Windows/Ubuntu offline jobs, Linux baseline and
-post-merge Windows `main` pass O-01…O-16 plus a deliberate false-positive
-probe: real SQLite/API/KDS and the static frontend complete a synthetic
+PR #41 and corrective PRs #42/#44. Dedicated Windows/Ubuntu jobs and the
+post-merge Full Cross-Platform Matrix `30711604415` pass on Ubuntu, Windows,
+macOS x64 and macOS arm64. Integrated `main` passes O-01…O-16 plus a
+deliberate false-positive probe: real SQLite/API/KDS and the static frontend
+complete a synthetic
 product/order/bill/payment flow, orderly and abrupt restarts preserve data,
 and the hidden Electron renderer remains local. Nine optional-service/renderer
 attempts were observed: seven blocked and two redirected to the explicitly
@@ -93,7 +95,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
-| Baseline test suite | `DONE` | Integrated `main` at `a05cc79` passes all 69 scripts without Bash; Linux baseline and dedicated Windows/Ubuntu offline CI also pass |
+| Baseline test suite | `DONE` | Integrated `main` at `a6724c56` passes all 69 scripts without Bash; Linux baseline, dedicated Windows/Ubuntu offline CI and the Ubuntu/Windows/macOS x64/arm64 full matrix also pass |
 | Upgrade-path test | `DONE` | Integrated `main` blocks checkpoint/copy/open/integrity/version/finalization failures before v1 and passes v0→v38, preservation, parity, idempotency and isolated retry; PR #28 merged and #16 closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
@@ -103,7 +105,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
 | Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. #34 is closed after a successful second-operator restore on another physical computer, but advanced technical checks were incomplete and the runbook was not suitable for non-technical staff; #39 remains open |
-| Internet-loss test | `DONE` (`SIM/CI` only) | #40 is closed; PR #41/#42 and integrated `main` pass O-01…O-16 + O-FP with API/KDS/frontend/renderer isolated to loopback and zero Internet successes. Physical disconnection, hostile LAN, hardware, phones and long-duration service are not covered |
+| Internet-loss test | `DONE` (`SIM/CI` only) | #40 is closed; PR #41/#42/#44, integrated `main` and Full Cross-Platform Matrix `30711604415` pass O-01…O-16 + O-FP with API/KDS/frontend/renderer isolated to loopback and zero Internet successes. Physical disconnection, hostile LAN, hardware, phones and long-duration service are not covered |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
 | PR #14 governance evidence | `DONE` | PR #14 merged at `90756e7`; #15 closed with the explicit decision to keep M0 `IN_PROGRESS` |
@@ -127,7 +129,7 @@ Exit criteria:
 - [x] Local repository remotes and branches recorded; evidence merged in PR #14.
 - [x] Node and npm versions recorded; evidence merged in PR #14.
 - [x] Clean dependency installation completed without Bash on integrated `main`.
-- [x] Existing tests completed; all 69 scripts pass without Bash, including dedicated Windows/Ubuntu offline CI.
+- [x] Existing tests completed; all 69 scripts pass without Bash, including dedicated Windows/Ubuntu offline CI and the full Ubuntu/Windows/macOS x64/arm64 matrix.
 - [x] Main build completed; evidence merged in PR #14.
 - [x] Frontend build completed; evidence merged in PR #14.
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
@@ -151,7 +153,7 @@ technical recovery and a non-technical assistant remain absent.
 | Repository remotes and branches recorded | Fulfilled | PR #14 |
 | Node and npm versions recorded | Fulfilled | Windows baseline and repeated post-merge evidence |
 | Clean dependency installation without Bash | Fulfilled | PR #21 and post-PR #31 `npm.cmd ci` |
-| Existing suite completed | Fulfilled | 69 scripts pass locally without Bash; Linux baseline and dedicated Windows/Ubuntu offline jobs pass |
+| Existing suite completed | Fulfilled | 69 scripts pass locally without Bash; Linux baseline, dedicated Windows/Ubuntu offline jobs and the four-target full matrix pass |
 | Main TypeScript build | Fulfilled | Local and CI build evidence |
 | Frontend static build | Fulfilled | 22 routes; packaged Windows installer remains a separate gap |
 | Application launched on Windows | Fulfilled | Development launch evidence; not packaged/hardware evidence |

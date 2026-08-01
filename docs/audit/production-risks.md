@@ -22,7 +22,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Backups frente a desastre | R-011 | `PARTIAL` | PR #35 acredita restore cross-runner; #34 cerró con restauración funcional por otra persona/equipo, pero no completó controles técnicos y #39 queda abierto |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
 | Telemetría antes de consentimiento | R-020 | `PARTIAL` | PR #41 cambia defaults frescos a `false`; O-01/O-10 observan cero intentos y O-11 intercepta el caso consentido en `main`/CI. El checkbox frontend y la revisión amplia de privacidad siguen pendientes |
-| Operación offline | R-011 / CORE-004 / [#40](https://github.com/joputajones/tpv-abierto/issues/40) | `DONE` (`SIM/CI` only) | PR #41/#42, Windows/Ubuntu CI, Linux baseline y `main` pasan O-01…O-16 + O-FP con 0 Internet exitosos; LAN hostil, hardware, desconexión física, larga duración y operación real siguen pendientes bajo R-011 |
+| Operación offline | R-011 / CORE-004 / [#40](https://github.com/joputajones/tpv-abierto/issues/40) | `DONE` (`SIM/CI` only) | PR #41/#42/#44 y el run post-merge `30711604415` pasan O-01…O-16 + O-FP, suite y empaquetado en Ubuntu, Windows y macOS x64/arm64 con 0 Internet exitosos; LAN hostil, hardware, desconexión física, larga duración y operación real siguen pendientes bajo R-011 |
 | Distribución/actualización | R-023 | `UNVERIFIED` | Configuración apunta upstream; no se empaquetó |
 | Dependencias/licencias | R-024 | `PARTIAL` | Audit/lockfiles revisados; falta SBOM/revisión legal |
 | Fiscalidad española | R-009 | `OUT_OF_SCOPE` | Requiere evaluación externa; no se afirma cumplimiento |
@@ -230,8 +230,11 @@ O-01/O-10 como regresión obligatoria.
 **Hecho observado:** O-01…O-16 completan una campaña breve y determinista con
 API, KDS, frontend, renderer, pedidos, facturas, pagos y reinicios. El guard
 observó 7 bloqueos y 2 redirecciones loopback aprobadas, sin conexión Internet
-exitosa. Cloud/telemetría/Google/WhatsApp/actualizador siguen compartiendo el
-proceso principal y la ejecución prolongada fue solo de tres operaciones.
+exitosa. PR #44 corrige dos defectos del arnés detectados por la matriz completa:
+espera el contenido visible tras redirecciones cliente y ejecuta Electron Linux
+bajo Xvfb. El run post-merge de cuatro plataformas pasa. Cloud/telemetría/
+Google/WhatsApp/actualizador siguen compartiendo el proceso principal y la
+ejecución prolongada fue solo de tres operaciones.
 
 **Impacto residual:** el arnés falla en 0 ms y por ello no reproduce DNS lento,
 pérdida parcial, proxy cautivo, memoria de un turno, LAN hostil ni dispositivos
