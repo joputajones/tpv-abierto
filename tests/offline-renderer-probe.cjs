@@ -28,6 +28,36 @@ function isLoopback(host) {
   return host === 'localhost' || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host);
 }
 
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function waitForVisibleContent(browserWindow, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError;
+  while (Date.now() < deadline) {
+    try {
+      const content = await browserWindow.webContents.executeJavaScript(`({
+        title: document.title,
+        readyState: document.readyState,
+        bodyLength: document.body ? document.body.innerText.trim().length : 0,
+      })`);
+      if (content.readyState === 'complete' && content.bodyLength > 0) {
+        return { ...content, finalUrl: browserWindow.webContents.getURL() };
+      }
+    } catch (error) {
+      // A Next.js client redirect can destroy the current execution context.
+      // Retry against the replacement document until it is complete and visible.
+      lastError = error;
+    }
+    await delay(50);
+  }
+  throw new Error(
+    `renderer did not reach visible local content within ${timeoutMs} ms; `
+    + `finalUrl=${browserWindow.webContents.getURL()}; lastError=${lastError?.message || 'none'}`,
+  );
+}
+
 async function main() {
   await app.whenReady();
   const events = [];
@@ -84,6 +114,7 @@ async function main() {
         externalWebSocket,
       };
     })()`);
+    Object.assign(renderer, await waitForVisibleContent(window));
     if (renderer.externalFetch === 'unexpected-success' || renderer.externalWebSocket === 'opened') {
       successfulExternalConnections++;
     }

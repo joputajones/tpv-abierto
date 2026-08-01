@@ -489,6 +489,8 @@ async function main() {
       assert.equal(rendererEvidence.renderer.health, 200);
       assert.equal(rendererEvidence.renderer.readyState, 'complete');
       assert.ok(rendererEvidence.renderer.bodyLength > 0, 'root renderer must contain visible local content');
+      assert.ok(rendererEvidence.renderer.finalUrl.startsWith(`http://127.0.0.1:${ports.apiPort}/`),
+        `root renderer must remain on loopback; final URL was ${rendererEvidence.renderer.finalUrl}`);
       assert.equal(rendererEvidence.renderer.externalFetch, 'blocked');
       assert.equal(rendererEvidence.renderer.externalWebSocket, 'blocked');
       assert.equal(rendererEvidence.successfulExternalConnections, 0);
