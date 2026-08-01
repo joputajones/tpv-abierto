@@ -266,12 +266,14 @@ tipo de evento y payload. Emite `app_launch`, un `daily_ping` como máximo cada
 24 horas y comprueba la periodicidad cada hora. La función de envío consulta
 `telemetry_enabled`.
 
-Hay una inconsistencia de primera instalación: `loadInstallDefaults()` crea
-`anonymous_data_consent=true` y `telemetry_enabled=true`, y el checkbox del
-wizard empieza marcado. Como `telemetry.start()` se ejecuta antes de que el
-usuario complete el wizard, una base nueva puede intentar enviar `app_launch`
-antes de una decisión informada. Las instalaciones migradas reciben defaults
-distintos (`false`) y el endpoint de setup sí respeta el booleano enviado.
+La rama de #40 corrige una inconsistencia de primera instalación detectada por
+O-01: `seedInstallDefaults()` sembraba `anonymous_data_consent=true` y
+`telemetry_enabled=true`, por lo que `telemetry.start()` podía intentar enviar
+antes de completar el wizard. Los defaults de base nueva son ahora `false`,
+coinciden con la migración v28 y O-01/O-10 observan cero intentos antes o sin
+consentimiento. El endpoint de setup sigue activando telemetría solo cuando
+recibe el booleano explícito. El checkbox preseleccionado del frontend y el
+contrato general cloud/privacidad requieren revisión separada bajo R-018.
 
 La sincronización cloud está desactivada por defecto y requiere registro/clave.
 Cuando se activa usa outbox local, HMAC, HTTPS/WSS, heartbeat y fallback de
@@ -290,3 +292,42 @@ La actualización automática:
   `joputajones/tpv-abierto`.
 - El instalador Windows actual se publica sin firma; macOS directo se configura
   para firma y notarización.
+
+## Arnés de operación offline (#40, evidencia provisional)
+
+`tests/offline-network-guard.cjs` se instala antes de cargar los servicios en
+un proceso Electron hijo ejecutado en modo Node. Intercepta `fetch`, HTTP,
+HTTPS, DNS, TCP, TLS y el constructor de `ws`; rechaza todo destino que no sea
+loopback y registra solo protocolo, host saneado, puerto, servicio y resultado.
+El API/KDS real puede conservar su bind `0.0.0.0` porque esa dirección no permite
+una conexión saliente a Internet. No se modifica firewall, proxy ni configuración
+global del equipo.
+
+`tests/offline-operation-worker.cjs` usa `userData` temporal, puertos efímeros,
+SQLite v38 real, API real, KDS REST/WebSocket real y el export estático real.
+Impresión, mDNS, dispositivos y ventanas visibles no se arrancan en ese worker.
+Un segundo proceso Electron real y oculto carga el frontend; CSP y
+`session.webRequest` bloquean sus sondas HTTPS/WSS externas. O-13 inventaría
+los recursos runtime de todos los HTML exportados y carga raíz, login, setup,
+POS, KDS standalone y ajustes; los enlaces externos de activación manual se
+clasifican aparte. La reconexión O-15
+no abre Internet: mapea un único hostname sintético a un servidor HTTP loopback
+y hace que la outbox real reintente sin reiniciar el TPV.
+
+Clasificación observada:
+
+| Superficie | Activación | Tolerancia offline observada |
+|---|---|---|
+| API, frontend y KDS | Obligatorios; loopback/LAN | Flujo local completo y reinicios PASS; la campaña automatizada permite solo loopback |
+| Cloud HTTPS/WSS | Opcional, con registro/clave | Bloqueo inmediato, outbox persistente y API/KDS disponibles; flags de datos siguen contradictorios bajo R-018 |
+| Telemetría | Solo consentimiento | Cero intentos sin consentimiento; con consentimiento el fallo se captura sin afectar salud local |
+| Google Drive | Opcional, con OAuth/token | `start()` sin configuración solo arma el scheduler y no intenta red |
+| WhatsApp | Opcional, activación/sesión | Inicio desactivado no intenta red; conectividad real no se probó |
+| Actualizador | Windows/macOS directo empaquetado | Sonda de endpoint bloqueada y no bloqueante; no se probó un feed/paquete real |
+| Recursos frontend | Obligatorios | HTML/assets locales y renderer oculto PASS; enlaces externos por acción del usuario no se abrieron |
+
+La ejecución local observó 9 intentos: 7 bloqueados y 2 redirigidos al simulador
+loopback aprobado, 0 conexiones Internet exitosas y 0 ms de fallo registrado
+frente al límite de 250 ms. Esto no acredita LAN entre dispositivos, impresoras,
+teléfonos, corte físico de red o electricidad, larga duración, operación real ni
+fiscalidad. Hasta merge y CI Windows/Linux, CORE-004 permanece `PARTIAL`.

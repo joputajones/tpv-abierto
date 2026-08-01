@@ -27,12 +27,13 @@ evidence alone.
 | Checksum before SQLite/destination | `DONE` | Local B-01/B-02/B-03 and both consumers reject mismatch before SQLite access or destination creation |
 | Independent restore and continuity | `DONE` | Fresh jobs restore with production `restoreBackup()`, reopen, advance order/bill sequences, write and reopen again |
 | Windows/Linux artifact transfer | `DONE` | Run 30671201413: Windows producer and independent Windows/Linux consumers share database SHA-256 `d2c4ee11…c1da95`; evidence `CI_CROSS_RUNNER` |
-| Human blind drill | `NOT_STARTED` | Procedure and blank form are versioned; another person and physical machine remain issue #34 |
+| Human blind drill | `PARTIAL` | #34 closed after a second operator restored on another physical computer and accessible checks passed; advanced technical checks were incomplete and the runbook was too technical. #39 tracks an assistant suitable for non-technical staff |
 
 PR #35 closes only the automated scope in #33. It does not close M0. Portable
 backup and automated independent-runner restore are `DONE` only at
 `CI_CROSS_RUNNER`; R-011 remains `PARTIAL` because physical loss,
-representative hardware and the human drill are still absent.
+representative hardware and complete technical/human-operability evidence are
+still absent.
 
 ## M0 evidence record
 
@@ -135,13 +136,45 @@ Windows, Linux and Playwright, merged at `0b629ab`, and closed #30.
 
 ## Network and offline operation
 
+### Provisional #40 branch matrix
+
+The following results were collected locally on Windows from
+`test/full-offline-operation`. They remain provisional until the technical PR
+passes dedicated Windows/Linux CI and merges. The guard is process-scoped and
+permits only loopback; it does not modify the host firewall. Evidence is
+`SIM`, not a physical restaurant, hostile LAN, printer, phone or fiscal test.
+
+| Case | Scenario | Local result | Evidence / residual limit |
+|---|---|---|---|
+| O-01 | Fresh startup | `PASS` | New disposable profile, schema 38/WAL, API/KDS/frontend 200 and zero pre-consent attempts |
+| O-02 | First-run setup | `PASS` | Synthetic owner/config created locally with cloud and telemetry off, then restarted |
+| O-03 | Catalogue | `PASS` | Category/product/table create, product edit and catalogue query through real API |
+| O-04 | Order/KDS | `PASS` | Dine-in order, second quantity line, confirmation, KDS login/REST/WebSocket |
+| O-05 | Bill/payment | `PASS` | Synthetic €36 total and cash payment persisted; no fiscal claim |
+| O-06 | Orderly restart | `PASS` | Product/order/bill/payment survive; integrity/FK/version and write probe pass |
+| O-07 | Abrupt restart | `PASS` | Owned child terminated, committed order recovers from WAL and database remains writable |
+| O-08 | Optional services unconfigured | `PASS` | Cloud, Drive and WhatsApp produce zero external attempts; local API stays 200 |
+| O-09 | Cloud unreachable | `PASS` | HTTPS/WSS attempt blocked, durable outbox retained, API/KDS stay 200; local command completed in 26–32 ms |
+| O-10 | Telemetry without consent | `PASS` | Zero telemetry attempts |
+| O-11 | Consented telemetry offline | `PASS` | Sanitized attempt to `telemetry.flopos.com` blocked and handled non-fatally |
+| O-12 | Updater endpoint offline | `PASS` | Guarded updater-endpoint probe fails immediately and local health stays 200; unpackaged test does not exercise a real release feed |
+| O-13 | Frontend resources | `PASS` | Runtime resources across exported HTML are local and present; hidden real Electron loads root/login/setup/POS/KDS/settings and CSP/webRequest deny explicit HTTPS/WSS probes |
+| O-14 | Brief prolonged operation | `PASS` | Three additional synthetic orders/bills/payments complete without additional external retry growth |
+| O-15 | Simulated reconnection | `PASS` | Real cloud outbox retries without POS restart against an explicitly mapped loopback HTTP simulator; not real cloud interoperability |
+| O-16 | Isolation | `PASS` | Zero Internet successes, ports reusable, probable real profiles byte-identical, no orphan child, sandbox deleted |
+| O-FP | False-positive rejection | `PASS` | Separate child intentionally permits `unauthorized.external.test` through loopback, exits 17 and names sanitized host/service |
+
+Observed aggregate: 9 attempts, 7 blocked, 2 redirected to the approved O-15
+loopback simulator, 0 successful Internet connections and maximum recorded
+guard failure 0 ms against the explicit 250 ms threshold.
+
 | Test ID | Scenario | Required evidence | Status | M0 note |
 |---|---|---|---|---|
 | T-NET-001 | Internet disconnected, LAN remains available | `BENCH` | `BLOCKED` | No isolated LAN/Internet test environment |
 | T-NET-002 | Mobile client reconnects after Wi-Fi interruption | `BENCH` | `BLOCKED` | No ordinary phone or Wi-Fi interruption run |
 | T-NET-003 | Router reboot during non-critical period | `BENCH` | `BLOCKED` | No router bench |
 | T-NET-004 | Documented emergency-network procedure | `BENCH` | `NOT_STARTED` | Procedure not defined |
-| T-NET-005 | Internet-only service queues or fails clearly | `SIM` | `PARTIAL` | Negative service tests pass; full Electron offline campaign not run |
+| T-NET-005 | Internet-only service queues or fails clearly | `SIM` | `PARTIAL` | O-08…O-15 pass locally with durable cloud outbox and fast guarded failures; Windows/Linux CI and merge pending |
 
 ## Backup and recovery
 
@@ -151,7 +184,7 @@ Windows, Linux and Playwright, merged at `0b629ab`, and closed #30.
 | T-BKP-002 | Automatic/local backup history | `SIM` | `PARTIAL` | Migration backups pass on happy path; no automatic local retention policy observed |
 | T-BKP-003 | Restore into disposable installation | `SIM` | `PARTIAL` | Automated restore test passes |
 | T-BKP-004 | Database migration creates pre-migration backup | `CODE` + `SIM` | `DONE` | Integrated path verifies version/integrity/read-only reopen, publishes atomically and proves isolated synthetic retry; not an off-device recovery claim |
-| T-BKP-005 | Restore instructions followed by a second person | `BENCH` | `BLOCKED` | Second operator and off-device copy unavailable |
+| T-BKP-005 | Restore instructions followed by a second person | `BENCH` | `PARTIAL` | #34 confirms functional restore on another physical computer, but advanced checks were incomplete and the runbook was not suitable for non-technical staff; #39 open |
 
 ## Diagnostics and privacy
 
