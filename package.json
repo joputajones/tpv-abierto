@@ -52,6 +52,8 @@
     "test:off-device-restore": "node tests/run-electron-node-test.cjs tests/off-device-backup-restore.test.cjs",
     "test:off-device-producer": "node tests/run-electron-node-test.cjs tests/off-device-backup-producer.cjs",
     "test:off-device-consumer": "node tests/run-electron-node-test.cjs tests/off-device-backup-consumer.cjs",
+    "test:recovery-assistant": "npm run build && node tests/run-electron-node-test.cjs tests/recovery-assistant.test.cjs",
+    "test:recovery-assistant-e2e": "npm run build && npm run build:frontend && node tests/recovery-assistant-e2e.test.cjs",
     "test:printer": "ts-node --transpile-only -P tests/tsconfig.json tests/printer.test.ts",
     "audit:db": "ts-node --transpile-only -P tests/tsconfig.json tests/db-audit.test.ts",
     "test:receipt-printing": "ts-node --transpile-only -P tests/tsconfig.json tests/receipt-printing.test.ts",
