@@ -2161,8 +2161,11 @@ function seedInstallDefaults(): void {
   insert('cloud_reports_enabled', '1');
   insert('cloud_command_polling_enabled', '1');
   insert('cloud_registration_status', 'unregistered');
-  insert('anonymous_data_consent', 'true');
-  insert('telemetry_enabled', 'true');
+  // A fresh install has not obtained consent yet. Keep telemetry off until
+  // setup records an explicit opt-in; the app must not phone home while the
+  // welcome screen is still waiting for its first owner.
+  insert('anonymous_data_consent', 'false');
+  insert('telemetry_enabled', 'false');
   insert('telemetry_scope', 'usage_stats,country,app_version,platform,session_duration,feature_usage,error_diagnostics');
   insert('kds_enabled', 'true');
   insert('kot_printing_enabled', 'true');
