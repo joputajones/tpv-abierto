@@ -749,6 +749,19 @@ servidor HTTP loopback y no acredita interoperabilidad con cloud real.
 | `npm.cmd run build:frontend` | 0 / 130,7 s | 22 páginas estáticas, 0 vulnerabilidades frontend |
 | `npm.cmd test` | 0 / 352,6 s | 69/69 scripts PASS sin Bash |
 
+### Primera ejecución de CI de la PR #41
+
+La primera ejecución confirmó Windows y encontró un requisito de testabilidad
+en Linux. `offline-operation (windows-latest)` pasó; en Ubuntu, O-01…O-12
+pasaron y O-13 terminó con `SIGTRAP` y
+`Can't create a GtkStyleContext without a display connection`. El mismo O-13
+hizo fallar `linux-baseline` porque la suite completa ya incluye la matriz.
+La causa es que GitHub-hosted Ubuntu no expone un display GTK, no un acceso a
+Internet ni un fallo del flujo local. La workflow se corrigió para ejecutar la
+suite que contiene el renderer oculto bajo el X virtual ya disponible en el
+runner (`xvfb-run`), sin añadir paquetes o dependencias del producto. La
+repetición CI permanece pendiente; los dos fallos iniciales no se ocultan.
+
 La instalación limpia, las pruebas específicas de reinicio/backup/migración,
 lint, ambos builds y los 69 scripts ya han pasado localmente. No quedaron
 listeners en 3001/3002 ni procesos del repositorio tras la ejecución. Pendientes:
