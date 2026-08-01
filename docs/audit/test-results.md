@@ -661,6 +661,129 @@ integrado, no desde la rama de la PR.
 
 La creación portable, transferencia por artifact, restauración limpia en
 Windows/Linux y continuidad posterior son `DONE` a nivel `CI_CROSS_RUNNER`.
-La issue técnica #33 está cerrada. El procedimiento y la plantilla están
-versionados, pero la issue humana #34 sigue abierta y sin formulario real; por
-tanto R-011 permanece `PARTIAL` y M0 permanece `IN_PROGRESS`.
+La issue técnica #33 está cerrada. Posteriormente #34 se ejecutó y cerró con
+aceptación funcional limitada: hubo otra persona/equipo y restauración visible,
+pero no se completaron todas las comprobaciones técnicas. #39 conserva la
+deuda de usabilidad; R-011 permanece `PARTIAL` y M0 `IN_PROGRESS`.
+
+## Operación completa sin Internet — evidencia provisional de rama
+
+- Fecha: 2026-08-01.
+- Rama: `test/full-offline-operation`.
+- Base inicial real: `87930805fd76a29f984917203b85a149aa75de13`.
+- Entorno: Windows 10, PowerShell, Node `v22.20.0`, npm `10.9.3`.
+- Bash: `where.exe bash` terminó con código 1; no está instalado/disponible.
+- Seguimiento: #34 cerrado con limitaciones; #39 y #40 creadas y asignadas.
+
+### Hallazgo rojo/verde de producción
+
+La primera inicialización del worker abrió una base nueva y observó dos
+intentos a `telemetry.flopos.com` antes de crear propietario o registrar
+consentimiento. La causa fue `seedInstallDefaults()` con
+`anonymous_data_consent=true` y `telemetry_enabled=true`, contradictorio con la
+migración v28 y los comentarios opt-in. Se cambiaron solo esos dos defaults a
+`false`; no se modificó esquema ni migración. Después, O-01 y O-10 observan
+cero intentos y O-11 demuestra que el caso consentido se bloquea y trata de
+forma no fatal.
+
+### Iteraciones del arnés que no se ocultan
+
+| Ejecución | Código / duración | Resultado |
+|---|---:|---|
+| Autotest inicial del wrapper `ws` | 1 / <1 s | Detectó copia de constantes de solo lectura; se sustituyó por un `Proxy` que conserva exports sin mutarlos |
+| Primer arranque de la matriz | 1 / 49,4 s | O-01 agotó 30 s; el diagnóstico aislado reveló telemetría preconsentimiento y que el guard rechazaba el bind `0.0.0.0` |
+| Repetición con diagnóstico | 1 / 6,1 s | `ECONNREFUSED` confirmó que el API/KDS no podía conservar el wildcard bind; se permitió únicamente la dirección no enrutable `0.0.0.0`/`::` para listeners |
+| Primera matriz funcional | 1 / 21,6 s | O-01…O-07 PASS; O-08 falló por expectativa textual `'0'` frente a `'false'`, ambos valores desactivados |
+| Segunda matriz funcional | 1 / 27,7 s | O-01…O-14 PASS; O-15 expuso una carrera del test con el estado `flushing` de la outbox |
+| Matriz corregida | 0 / 25,5 s | O-01…O-16 y O-FP PASS; se hizo explícito el reintento real de outbox sin esperar el intervalo de 15 s |
+
+Todos los fallos anteriores pertenecían al arnés excepto el default de
+telemetría, que era un defecto de producción localizado. Los sandboxes y
+procesos hijos se limpiaron incluso en las rutas fallidas.
+
+### Validación local completa sin Bash
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:cross-platform-scripts` | 0 / <1 s | El runner reconoce 69 scripts y conserva invocación/fail-fast multiplataforma |
+| `where.exe bash` | 1 / 0,2 s | Resultado esperado: Bash no está instalado ni disponible |
+| `npm.cmd ci` (primer intento) | 1 (`EPERM -4048`) / 9,6 s | Una instancia `npm run dev` preexistente mantenía bloqueado `better-sqlite3`; se identificó y terminó solo el árbol de procesos de este repositorio, y los puertos 3001/3002 quedaron libres |
+| `npm.cmd ci` (repetición limpia) | 0 / 72,8 s | 648 paquetes instalados y módulos nativos reconstruidos; 1 vulnerabilidad moderada y avisos de paquete obsoleto/funding |
+| `npm.cmd run test:full-offline-operation` (primera tras `ci`) | 1 / 49,2 s | O-01 agotó el límite de readiness de 30 s durante inicialización fría de Electron; sandbox y procesos se limpiaron |
+| `npm.cmd run test:full-offline-operation` (repetición) | 0 / 29,3 s | Readiness separado elevado a 60 s; O-01…O-16 y O-FP PASS, 9 intentos, 7 bloqueos, 2 redirecciones loopback autorizadas, 0 éxitos Internet y máximo 0 ms frente a límite 250 ms |
+| `npm.cmd run test:restart-recovery` | 0 / 58,3 s | R-01…R-12 PASS, incluidas 18 observaciones WAL y limpieza |
+| `npm.cmd run test:off-device-restore` | 0 / 8,1 s | A-01/A-02 y B-01…B-07 PASS con datos exclusivamente sintéticos |
+| `npm.cmd run test:migration-backup-fail-closed` | 0 / 3,1 s | Barreras negativas y camino correcto PASS |
+| `npm.cmd run test:upgrade-path` | 0 / 2,6 s | v0→v38, copia, preservación, paridad e idempotencia PASS |
+| `npm.cmd run test:backup` | 0 / 1,9 s | 10/10 comprobaciones PASS |
+| `npm.cmd run test:schema-health` | 0 / 3,2 s | Esquema v38, instalación limpia y hallazgos safe/manual-review PASS |
+| `npm.cmd run lint` | 0 / 57,4 s | Cero errores; 676 advertencias preexistentes de tipado/variables no usadas |
+| `npm.cmd run build` | 0 / 25,4 s | TypeScript y copia de assets runtime PASS |
+| `npm.cmd run build:frontend` | 0 / 74,1 s | Next.js 16.2.12 genera 22 páginas estáticas; 0 vulnerabilidades en la instalación frontend |
+| `npm.cmd test` | 0 / 316,6 s | Los 69 scripts PASS sin Bash; los errores impresos corresponden a casos negativos deliberados |
+
+El flujo real probado crea/edita categoría y producto, crea mesa, abre un
+pedido dine-in, añade una segunda línea con cantidad 2, confirma, consulta KDS
+REST/WebSocket, genera una factura sintética de 36 EUR y registra pago en
+efectivo. Tras cierre ordenado y terminación abrupta sobreviven producto,
+pedido, factura y pago; `integrity_check=ok`, `user_version=38`,
+`foreign_key_check` vacío y una escritura posterior funciona.
+
+El frontend estático no contiene referencias runtime externas en la ruta raíz.
+El arnés inspecciona los HTML exportados y comprueba que sus recursos runtime
+locales existen. Un proceso Electron real oculto carga raíz, login, setup, POS,
+KDS standalone y ajustes; CSP y `session.webRequest` rechazan sondas HTTPS/WSS.
+Los enlaces externos que requieren una acción del usuario no se clasifican como
+recursos de arranque. O-12 comprueba de forma
+determinista un endpoint de actualización bloqueado y salud local posterior,
+pero no ejecuta un feed de release empaquetado. O-15 usa exclusivamente un
+servidor HTTP loopback y no acredita interoperabilidad con cloud real.
+
+### Repetición final tras reforzar O-13
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:full-offline-operation` | 0 / 25,4 s | O-01…O-16 y O-FP PASS, incluidas cinco rutas principales en Electron |
+| `npm.cmd run lint` | 0 / 52,6 s | Cero errores y las mismas 676 advertencias heredadas |
+| `npm.cmd run build` | 0 / 25,6 s | PASS |
+| `npm.cmd run build:frontend` | 0 / 130,7 s | 22 páginas estáticas, 0 vulnerabilidades frontend |
+| `npm.cmd test` | 0 / 352,6 s | 69/69 scripts PASS sin Bash |
+
+### Primera ejecución de CI de la PR #41
+
+La primera ejecución confirmó Windows y encontró un requisito de testabilidad
+en Linux. `offline-operation (windows-latest)` pasó; en Ubuntu, O-01…O-12
+pasaron y O-13 terminó con `SIGTRAP` y
+`Can't create a GtkStyleContext without a display connection`. El mismo O-13
+hizo fallar `linux-baseline` porque la suite completa ya incluye la matriz.
+La causa es que GitHub-hosted Ubuntu no expone un display GTK, no un acceso a
+Internet ni un fallo del flujo local. La workflow se corrigió para ejecutar la
+suite que contiene el renderer oculto bajo el X virtual ya disponible en el
+runner (`xvfb-run`), sin añadir paquetes o dependencias del producto. La
+repetición CI permanece pendiente; los dos fallos iniciales no se ocultan.
+
+En la segunda ejecución, el job offline dedicado de Ubuntu pasó completo, pero
+`linux-baseline` repitió O-13 dentro de los 69 scripts y encontró una aserción
+inestable del arnés: una ruta protegida estaba en una redirección cliente y su
+texto era temporalmente vacío aunque el documento local había cargado. Se
+mantuvo la exigencia de contenido visible en la raíz y, para cada ruta, se
+sustituyó `bodyLength > 0` por HTTP 200, DOM `complete` y URL final loopback.
+Esto conserva la prueba de carga local sin confundir un estado transitorio de
+la UI con una dependencia externa. La nueva repetición CI queda pendiente.
+
+### Validación local del ajuste tras la segunda ejecución CI
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:full-offline-operation` | 0 / 22,8 s | O-01…O-16 y O-FP PASS con la aserción estable de rutas protegidas |
+| `npm.cmd run lint` | 0 / 46,5 s | Cero errores; 676 advertencias heredadas |
+| `npm.cmd run build` | 0 / 25,4 s | PASS |
+| `npm.cmd run build:frontend` | 0 / 114,7 s | 22 páginas estáticas, 0 vulnerabilidades frontend |
+| Primer intento orquestado de `npm.cmd test` | interrumpido / 4,4 s | El límite externo de 1 s cerró stdout y causó `EPIPE`; no se clasifica como resultado del repositorio |
+| Repetición verificable de `npm.cmd test` | 0 / 198,5 s | 69/69 scripts PASS sin Bash; las trazas de error son casos negativos deliberados |
+
+La instalación limpia, las pruebas específicas de reinicio/backup/migración,
+lint, ambos builds y los 69 scripts ya han pasado localmente. No quedaron
+listeners en 3001/3002 ni procesos del repositorio tras la ejecución. Pendientes:
+revisión final del diff, PR, Windows/Linux CI y merge. CORE-004 permanece
+`PARTIAL`, R-011 y R-018 permanecen `PARTIAL` y M0 continúa `IN_PROGRESS`.

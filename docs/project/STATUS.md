@@ -1,6 +1,6 @@
 # Development status
 
-**Snapshot date:** 2026-07-31
+**Snapshot date:** 2026-08-01
 **Overall phase:** Phase 0 — baseline audit
 
 **Overall status:** `IN_PROGRESS`
@@ -58,6 +58,27 @@ These results improve confidence in the code baseline; they do not establish
 production readiness, Spanish fiscal compliance or suitability for a real
 restaurant.
 
+Issue [#34](https://github.com/joputajones/tpv-abierto/issues/34) is now closed
+with explicit limitations. A second operator restored the real backup on a
+different physical computer and the checks accessible to that operator passed,
+but the runbook was too technical and the advanced checks were not completed.
+This is a useful human functional restore, not complete technical disaster
+recovery. BACKUP-002 and R-011 therefore remain `PARTIAL`; the non-technical
+recovery assistant is tracked in open issue
+[#39](https://github.com/joputajones/tpv-abierto/issues/39).
+
+Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) tracks the
+full offline-operation matrix. On branch `test/full-offline-operation`, local
+Windows evidence passes O-01…O-16 plus a deliberate false-positive probe: real
+SQLite/API/KDS and the static frontend complete a synthetic product/order/bill/
+payment flow, orderly and abrupt restarts preserve data, and the hidden
+Electron renderer remains local. Nine optional-service/renderer attempts were
+observed: seven blocked and two redirected to the explicitly approved loopback
+simulator, with zero successful Internet connections and 0 ms recorded guard
+failure time against a 250 ms limit. This evidence remains provisional until
+the technical PR and Windows/Linux CI merge; CORE-004 is `PARTIAL`, R-018 is
+not closed and M0 remains `IN_PROGRESS`.
+
 Detailed evidence: [audit baseline](../audit/baseline.md),
 [test results](../audit/test-results.md),
 [architecture map](../audit/architecture-map.md) and
@@ -72,7 +93,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
-| Baseline test suite | `DONE` | Integrated `main` passes all 68 scripts without Bash; fail-fast propagation was proved with reverted synthetic failures and the full Windows/Linux/macOS matrix passed |
+| Baseline test suite | `DONE` | Integrated `main` passes all 68 scripts without Bash; the offline branch registers a 69th script and all 69 pass locally on Windows, while dedicated Windows/Linux CI and merge remain pending |
 | Upgrade-path test | `DONE` | Integrated `main` blocks checkpoint/copy/open/integrity/version/finalization failures before v1 and passes v0→v38, preservation, parity, idempotency and isolated retry; PR #28 merged and #16 closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
@@ -81,8 +102,8 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`: PR #35 closed [#33](https://github.com/joputajones/tpv-abierto/issues/33) after a Windows producer and independent Windows/Linux consumers passed checksum-first restore, continuity and B-01…B-07. Overall recovery remains `PARTIAL` because the physical blind second-person drill is still open as [#34](https://github.com/joputajones/tpv-abierto/issues/34) |
-| Internet-loss test | `NOT_STARTED` | Standalone local server needs no cloud service, but the full Electron process was not isolated from the Internet |
+| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. #34 is closed after a successful second-operator restore on another physical computer, but advanced technical checks were incomplete and the runbook was not suitable for non-technical staff; #39 remains open |
+| Internet-loss test | `PARTIAL` | #40 branch evidence passes O-01…O-16 locally on Windows with API/KDS/frontend/renderer isolated to loopback and zero Internet successes; Windows/Linux CI and merge are still pending |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
 | PR #14 governance evidence | `DONE` | PR #14 merged at `90756e7`; #15 closed with the explicit decision to keep M0 `IN_PROGRESS` |
@@ -144,19 +165,20 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 ## Immediate next actions
 
-1. Give an ephemeral off-device package and the versioned runbook to an
-   independent operator, then complete the physical blind drill in #34.
-2. Define and enforce the cloud data contract and feature flags before any
+1. Complete review and Windows/Linux CI for the offline matrix in #40, then
+   repeat the same matrix from integrated `main`.
+2. Build and human-test the non-technical recovery assistant in #39.
+3. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
-3. Run the M1 bench gate with representative printer hardware, two local
+4. Run the M1 bench gate with representative printer hardware, two local
    clients, KDS and Internet/LAN failure scenarios.
 
 ## Blockers
 
 - Dependency review is operational, but no branch protection or ruleset enforces
   it; a red check remains a manual governance blocker.
-- Automated off-device restore is integrated at `CI_CROSS_RUNNER`, but the
-  physical second-person drill remains pending in #34.
+- #34 produced a limited successful physical restore, but technical disaster
+  recovery and a non-technical, cross-platform assistant remain pending in #39.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
   router-failure setup are unavailable.
 - Complete, reviewed and sanitised VirtuaPOS fixtures are unavailable.

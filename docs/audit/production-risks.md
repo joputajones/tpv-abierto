@@ -11,7 +11,7 @@ Los riesgos de esta auditoría se reflejan ahora en
 
 | Riesgo técnico | ID oficial | Estado de mitigación | Evidencia / limitación |
 | --- | --- | --- | --- |
-| Gobierno de datos cloud contradictorio | R-018 | `NOT_STARTED` | Confirmado por código; no se activó una cuenta real |
+| Gobierno de datos cloud contradictorio | R-018 | `PARTIAL` | #40 mantiene cloud apagado por defecto y corrige telemetría preconsentimiento; los flags de pedidos/informes siguen sin gobernar todos los caminos y no se activó una cuenta real |
 | Migración continúa sin copia previa | R-005 / [#16](https://github.com/joputajones/tpv-abierto/issues/16) | `DONE` | PR #28 integrada; el fallo histórico está reproducido y el camino actual bloquea antes de v1 hasta verificar la copia |
 | Reinicio graceful/abrupto sin matriz | CORE-002 / [#30](https://github.com/joputajones/tpv-abierto/issues/30) | `DONE` | PR #31 integra R-01…R-12 en Windows/Linux con datos y procesos temporales; #30 está cerrado. El alcance es `SIM` |
 | Datos privados en repositorio público | R-006 / [#17](https://github.com/joputajones/tpv-abierto/issues/17) | `PARTIAL` | El diff auditado fue saneado; falta un gate mantenido |
@@ -19,10 +19,10 @@ Los riesgos de esta auditoría se reflejan ahora en
 | Instalación Windows no reproducible | R-022 / [#18](https://github.com/joputajones/tpv-abierto/issues/18) | `DONE` | SDK/MSVC reparados; PR #21 fusionada; instalación, rebuild, verificador, builds y 68 scripts repetidos desde `main` sin Bash. El restore automatizado cross-runner está integrado; desastre físico sigue en R-011 |
 | Dependency review de CI no ejecutable | R-025 / [#19](https://github.com/joputajones/tpv-abierto/issues/19) | `DONE` | Dependency Graph habilitado; acción real validada; PR #24 fusionada y #19 cerrado. El enforcement de merge sigue siendo manual |
 | Impresión y duplicados | R-003 | `NOT_STARTED` | Automatización parcial; hardware bloqueado |
-| Backups frente a desastre | R-011 | `PARTIAL` | PR #35 acredita copia por artifact y restore Windows/Linux a nivel `CI_CROSS_RUNNER`; faltan medio/equipo físico y simulacro humano. El cierre de R-005 no acredita desastre |
+| Backups frente a desastre | R-011 | `PARTIAL` | PR #35 acredita restore cross-runner; #34 cerró con restauración funcional por otra persona/equipo, pero no completó controles técnicos y #39 queda abierto |
 | Puerto principal inconsistente | R-021 | `NOT_STARTED` | Confirmado por código; fallback no provocado |
-| Telemetría antes de consentimiento | R-020 | `NOT_STARTED` | Confirmado por defaults/orden de arranque; sin captura HTTPS |
-| Operación offline | R-011 / CORE-004 | `UNVERIFIED` | Backend local funciona; Electron completo no fue aislado |
+| Telemetría antes de consentimiento | R-020 | `PARTIAL` | La rama #40 cambia defaults frescos a `false`; O-01/O-10 observan cero intentos y O-11 intercepta el caso consentido. Merge/CI pendientes y checkbox frontend por revisar |
+| Operación offline | R-011 / CORE-004 / [#40](https://github.com/joputajones/tpv-abierto/issues/40) | `PARTIAL` | O-01…O-16 pasan localmente con API/KDS/frontend/renderer y 0 Internet exitosos; Windows/Linux CI, LAN/hardware y desconexión física pendientes |
 | Distribución/actualización | R-023 | `UNVERIFIED` | Configuración apunta upstream; no se empaquetó |
 | Dependencias/licencias | R-024 | `PARTIAL` | Audit/lockfiles revisados; falta SBOM/revisión legal |
 | Fiscalidad española | R-009 | `OUT_OF_SCOPE` | Requiere evaluación externa; no se afirma cumplimiento |
@@ -191,10 +191,11 @@ observaron el SHA-256 de base `d2c4ee11…c1da95`, restauraron y continuaron
 escribiendo. Esta mitigación concreta es `DONE` a nivel `CI_CROSS_RUNNER`.
 
 **Riesgo residual explícito:** CI no prueba USB/NAS, pérdida física, permisos
-del equipo real, restauración durante servicio, impresión, configuración fuera
-de SQLite ni capacidad de un empleado para seguir el runbook. El simulacro
-ciego de segunda persona permanece en #34. Por ello R-011 es `PARTIAL`, no
-`DONE`, y M0 continúa `IN_PROGRESS`.
+del equipo real, restauración durante servicio, impresión ni configuración
+fuera de SQLite. #34 añadió una restauración funcional por una segunda persona
+en otro equipo, pero el operador no pudo completar controles técnicos y el
+runbook asumía conocimientos previos. #39 mantiene esa deuda. Por ello R-011 es
+`PARTIAL`, no `DONE`, y M0 continúa `IN_PROGRESS`.
 
 ## P2 — Fallback del puerto principal inconsistente
 
@@ -211,29 +212,34 @@ hacer fallback.
 
 ## P2 — Consentimiento de telemetría en primera instalación
 
-**Hecho observado:** la base nueva siembra consentimiento/telemetría en `true`,
-el checkbox del wizard empieza marcado y `telemetry.start()` ocurre antes de
-completar setup. Las migraciones para instalaciones existentes usan `false`.
+**Hecho observado:** O-01 reprodujo que la base nueva sembraba consentimiento y
+telemetría en `true`, mientras las migraciones existentes usaban `false`. La
+rama #40 cambia únicamente los defaults de instalación a `false`; no modifica
+el esquema ni una migración publicada. O-01 y O-10 observan cero intentos y
+O-11 intercepta el intento consentido sin afectar la API.
 
-**Impacto:** una instalación nueva puede intentar enviar `app_launch` y
-`daily_ping` antes de una acción afirmativa, en contradicción con los comentarios
-“opt-in”.
+**Impacto residual:** el envío preconsentimiento queda mitigado si el cambio se
+fusiona, pero el checkbox del wizard y el contrato general de privacidad/cloud
+todavía deben revisarse. Esta evidencia no prueba el endpoint real.
 
-**Acción recomendada:** default `false`, no iniciar telemetría hasta completar
-setup y prueba automatizada que intercepte la red en el primer arranque.
+**Acción recomendada:** fusionar solo con Windows/Linux verdes, hacer el opt-in
+del wizard inequívoco y mantener O-01/O-10 como regresión obligatoria.
 
-## P2 — Riesgo operativo offline no ensayado
+## P2 — Riesgo operativo offline ensayado solo a nivel SIM
 
-**Hecho observado:** pedidos y pagos son locales y las integraciones capturan
-errores de red, pero no se ejecutó una campaña de desconexión prolongada.
-Cloud/telemetría/Google/WhatsApp/actualizador comparten el proceso principal.
+**Hecho observado:** O-01…O-16 completan una campaña breve y determinista con
+API, KDS, frontend, renderer, pedidos, facturas, pagos y reinicios. El guard
+observó 7 bloqueos y 2 redirecciones loopback aprobadas, sin conexión Internet
+exitosa. Cloud/telemetría/Google/WhatsApp/actualizador siguen compartiendo el
+proceso principal y la ejecución prolongada fue solo de tres operaciones.
 
-**Impacto:** DNS lento, timeouts, reconexiones WSS o colas pueden afectar
-latencia/memoria aunque el diseño sea local-first.
+**Impacto residual:** el arnés falla en 0 ms y por ello no reproduce DNS lento,
+pérdida parcial, proxy cautivo, memoria de un turno, LAN hostil ni dispositivos
+secundarios. O-12 es una sonda bloqueada del endpoint, no un feed empaquetado.
 
-**Acción recomendada:** prueba de turno completo sin Internet, con LAN
-disponible; después pérdida/reconexión de LAN con varios dispositivos, medición
-de latencia, memoria, outbox y recuperación sin duplicados.
+**Acción recomendada:** completar Windows/Linux CI y merge; después ejecutar un
+turno BENCH con Internet físicamente cortado pero LAN disponible, varios
+dispositivos, medición de latencia/memoria/outbox y recuperación sin duplicados.
 
 ## P2 — Fiscalidad no validada para España
 
