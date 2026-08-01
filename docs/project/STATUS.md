@@ -67,17 +67,17 @@ recovery. BACKUP-002 and R-011 therefore remain `PARTIAL`; the non-technical
 recovery assistant is tracked in open issue
 [#39](https://github.com/joputajones/tpv-abierto/issues/39).
 
-Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) tracks the
-full offline-operation matrix. On branch `test/full-offline-operation`, local
-Windows evidence passes O-01…O-16 plus a deliberate false-positive probe: real
-SQLite/API/KDS and the static frontend complete a synthetic product/order/bill/
-payment flow, orderly and abrupt restarts preserve data, and the hidden
-Electron renderer remains local. Nine optional-service/renderer attempts were
-observed: seven blocked and two redirected to the explicitly approved loopback
-simulator, with zero successful Internet connections and 0 ms recorded guard
-failure time against a 250 ms limit. This evidence remains provisional until
-the technical PR and Windows/Linux CI merge; CORE-004 is `PARTIAL`, R-018 is
-not closed and M0 remains `IN_PROGRESS`.
+Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) is closed by
+PR #41 and corrective PR #42. Windows/Ubuntu offline jobs, Linux baseline and
+post-merge Windows `main` pass O-01…O-16 plus a deliberate false-positive
+probe: real SQLite/API/KDS and the static frontend complete a synthetic
+product/order/bill/payment flow, orderly and abrupt restarts preserve data,
+and the hidden Electron renderer remains local. Nine optional-service/renderer
+attempts were observed: seven blocked and two redirected to the explicitly
+approved loopback simulator, with zero successful Internet connections and
+0 ms recorded guard failure time against a 250 ms limit. CORE-004 is `DONE`
+only at evidence level `SIM/CI`; R-011 and R-018 remain `PARTIAL`, #39 remains
+open and M0 remains `IN_PROGRESS`.
 
 Detailed evidence: [audit baseline](../audit/baseline.md),
 [test results](../audit/test-results.md),
@@ -93,7 +93,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
-| Baseline test suite | `DONE` | Integrated `main` passes all 68 scripts without Bash; the offline branch registers a 69th script and all 69 pass locally on Windows, while dedicated Windows/Linux CI and merge remain pending |
+| Baseline test suite | `DONE` | Integrated `main` at `a05cc79` passes all 69 scripts without Bash; Linux baseline and dedicated Windows/Ubuntu offline CI also pass |
 | Upgrade-path test | `DONE` | Integrated `main` blocks checkpoint/copy/open/integrity/version/finalization failures before v1 and passes v0→v38, preservation, parity, idempotency and isolated retry; PR #28 merged and #16 closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
 | Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
@@ -103,7 +103,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
 | Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. #34 is closed after a successful second-operator restore on another physical computer, but advanced technical checks were incomplete and the runbook was not suitable for non-technical staff; #39 remains open |
-| Internet-loss test | `PARTIAL` | #40 branch evidence passes O-01…O-16 locally on Windows with API/KDS/frontend/renderer isolated to loopback and zero Internet successes; Windows/Linux CI and merge are still pending |
+| Internet-loss test | `DONE` (`SIM/CI` only) | #40 is closed; PR #41/#42 and integrated `main` pass O-01…O-16 + O-FP with API/KDS/frontend/renderer isolated to loopback and zero Internet successes. Physical disconnection, hostile LAN, hardware, phones and long-duration service are not covered |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
 | PR #14 governance evidence | `DONE` | PR #14 merged at `90756e7`; #15 closed with the explicit decision to keep M0 `IN_PROGRESS` |
@@ -127,7 +127,7 @@ Exit criteria:
 - [x] Local repository remotes and branches recorded; evidence merged in PR #14.
 - [x] Node and npm versions recorded; evidence merged in PR #14.
 - [x] Clean dependency installation completed without Bash on integrated `main`.
-- [x] Existing tests completed; all 68 scripts pass without Bash in the full platform matrix.
+- [x] Existing tests completed; all 69 scripts pass without Bash, including dedicated Windows/Ubuntu offline CI.
 - [x] Main build completed; evidence merged in PR #14.
 - [x] Frontend build completed; evidence merged in PR #14.
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
@@ -139,9 +139,10 @@ Exit criteria:
 M0 remains `IN_PROGRESS` by explicit maintainer decision. The enumerated
 technical/documentary baseline criteria are now evidenced, but closing the
 milestone requires a later human decision and does not imply restaurant
-readiness. The restart matrix remains a process-level simulation and does not
-validate physical power loss or real operation. Off-device restore is now
-validated only at `CI_CROSS_RUNNER`; human and physical recovery remain absent.
+readiness. The restart/offline matrices remain process-level simulations and
+do not validate physical power loss or real operation. Off-device restore is
+validated at `CI_CROSS_RUNNER`; #34 adds a limited human restore, while complete
+technical recovery and a non-technical assistant remain absent.
 
 ### M0 reevaluation after PR #31
 
@@ -150,7 +151,7 @@ validated only at `CI_CROSS_RUNNER`; human and physical recovery remain absent.
 | Repository remotes and branches recorded | Fulfilled | PR #14 |
 | Node and npm versions recorded | Fulfilled | Windows baseline and repeated post-merge evidence |
 | Clean dependency installation without Bash | Fulfilled | PR #21 and post-PR #31 `npm.cmd ci` |
-| Existing suite completed | Fulfilled | 68 scripts pass locally without Bash and in the full platform matrix |
+| Existing suite completed | Fulfilled | 69 scripts pass locally without Bash; Linux baseline and dedicated Windows/Ubuntu offline jobs pass |
 | Main TypeScript build | Fulfilled | Local and CI build evidence |
 | Frontend static build | Fulfilled | 22 routes; packaged Windows installer remains a separate gap |
 | Application launched on Windows | Fulfilled | Development launch evidence; not packaged/hardware evidence |
@@ -165,12 +166,10 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 ## Immediate next actions
 
-1. Complete review and Windows/Linux CI for the offline matrix in #40, then
-   repeat the same matrix from integrated `main`.
-2. Build and human-test the non-technical recovery assistant in #39.
-3. Define and enforce the cloud data contract and feature flags before any
+1. Build and human-test the non-technical recovery assistant in #39.
+2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
-4. Run the M1 bench gate with representative printer hardware, two local
+3. Run the M1 bench gate with representative printer hardware, two local
    clients, KDS and Internet/LAN failure scenarios.
 
 ## Blockers

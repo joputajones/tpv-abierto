@@ -86,7 +86,7 @@ install, matrix, upgrade, backup, both builds and all 67 scripts without Bash.
 | T-BLD-002 | Main TypeScript build | `BUILD` | `DONE` | Integrated `main` TypeScript build passes locally and in Linux CI |
 | T-BLD-003 | Frontend static build | `BUILD` | `DONE` | Integrated `main` exports 22 routes locally and in CI; tooling advisories remain tracked separately |
 | T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` passes all 68 scripts without Bash in the full Windows/Linux/macOS matrix; #16, #18, #20, #30 and automated recovery #33 are closed |
+| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` at `a05cc79` passes all 69 scripts without Bash; PR #42 also passes Linux baseline and the dedicated Windows/Ubuntu offline jobs |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `DONE` | Integrated `main` blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification |
 
 ## Controlled restart recovery — issue #30 / PR #31
@@ -136,13 +136,13 @@ Windows, Linux and Playwright, merged at `0b629ab`, and closed #30.
 
 ## Network and offline operation
 
-### Provisional #40 branch matrix
+### Integrated #40 offline matrix
 
-The following results were collected locally on Windows from
-`test/full-offline-operation`. They remain provisional until the technical PR
-passes dedicated Windows/Linux CI and merges. The guard is process-scoped and
-permits only loopback; it does not modify the host firewall. Evidence is
-`SIM`, not a physical restaurant, hostile LAN, printer, phone or fiscal test.
+The following results are integrated through PR #41 and corrective PR #42.
+Dedicated Windows/Ubuntu jobs, Linux baseline and post-merge Windows `main`
+pass. The guard is process-scoped and permits only loopback; it does not modify
+the host firewall. Evidence is `SIM/CI`, not a physical Internet-disconnection,
+restaurant, hostile-LAN, printer, phone, long-shift or fiscal test.
 
 | Case | Scenario | Local result | Evidence / residual limit |
 |---|---|---|---|
@@ -174,7 +174,7 @@ guard failure 0 ms against the explicit 250 ms threshold.
 | T-NET-002 | Mobile client reconnects after Wi-Fi interruption | `BENCH` | `BLOCKED` | No ordinary phone or Wi-Fi interruption run |
 | T-NET-003 | Router reboot during non-critical period | `BENCH` | `BLOCKED` | No router bench |
 | T-NET-004 | Documented emergency-network procedure | `BENCH` | `NOT_STARTED` | Procedure not defined |
-| T-NET-005 | Internet-only service queues or fails clearly | `SIM` | `PARTIAL` | O-08…O-15 pass locally with durable cloud outbox and fast guarded failures; Windows/Linux CI and merge pending |
+| T-NET-005 | Internet-only service queues or fails clearly | `SIM/CI` | `DONE` | O-08…O-15 pass on integrated `main` and Windows/Ubuntu CI with durable cloud outbox, zero Internet successes and fast guarded failures; real cloud interoperability and physical network failure remain separate gaps |
 
 ## Backup and recovery
 
