@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
-import { app } from 'electron';
 import * as fs from 'fs';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -14,8 +13,22 @@ export { PreMigrationBackupError } from './pre-migration-backup';
 
 let db: Database.Database;
 let dbHealthError: string | null = null;
+let databasePathOverride: string | null = null;
+let backupDirectoryOverride: string | null = null;
+let appVersionOverride: string | null = null;
 
 const DEFAULT_CLOUD_SERVER_URL = 'https://blue.flopos.com/';
+
+function getElectronApp(): Electron.App {
+  // Recovery workers run under ELECTRON_RUN_AS_NODE from the packaged binary,
+  // where the development-only `electron` module is intentionally absent.
+  // They always provide explicit paths/version and never call this fallback.
+  return (require('electron') as typeof import('electron')).app;
+}
+
+function runtimeAppVersion(): string {
+  return appVersionOverride || getElectronApp().getVersion();
+}
 
 function randomSecret(): string {
   return crypto.randomBytes(32).toString('base64')
@@ -62,20 +75,33 @@ export function getDbHealth(): { ok: boolean; error?: string } {
 }
 
 export function getDbPath(): string {
+  if (databasePathOverride) return databasePathOverride;
+  const app = getElectronApp();
   const userDataPath = app.isPackaged ? app.getPath('userData') : path.join(__dirname, '../');
   return path.join(userDataPath, 'flo.db');
 }
 
 function getBackupDir(): string {
+  if (backupDirectoryOverride) return backupDirectoryOverride;
+  const app = getElectronApp();
   const userDataPath = app.getPath('userData');
   return path.join(userDataPath, 'backups');
 }
 
 export interface InitDatabaseOptions {
   preMigrationBackup?: Partial<PreMigrationBackupDependencies>;
+  /** Explicit disposable location used by recovery checks and tests. */
+  databasePath?: string;
+  backupDirectory?: string;
+  appVersion?: string;
 }
 
 export function initDatabase(options: InitDatabaseOptions = {}): void {
+  if (options.databasePath) {
+    databasePathOverride = path.resolve(options.databasePath);
+    backupDirectoryOverride = path.resolve(options.backupDirectory || path.join(path.dirname(databasePathOverride), 'backups'));
+    appVersionOverride = options.appVersion || null;
+  }
   const dbPath = getDbPath();
   const databaseExistedBeforeOpen = fs.existsSync(dbPath);
   let openedDb: Database.Database | undefined;
@@ -411,7 +437,7 @@ export async function createBackup(targetPath?: string): Promise<{ path: string;
   backupDb.prepare(`INSERT OR REPLACE INTO _flo_meta (key, value) VALUES (?, ?)`)
     .run('backup_created_at', new Date().toISOString());
   backupDb.prepare(`INSERT OR REPLACE INTO _flo_meta (key, value) VALUES (?, ?)`)
-    .run('app_version', app.getVersion());
+    .run('app_version', runtimeAppVersion());
   backupDb.close();
 
   if (finalPath !== tempPath) {
@@ -573,11 +599,17 @@ function dataOnlyRestore(backupPath: string, backupVersion: number, currentVersi
   // (e.g. macOS paths containing apostrophes like /Users/O'Brien/backup.db)
   const safeBackupPath = backupPath.replace(/'/g, "''");
 
+  // Copy the dataset atomically. Parent and child tables may be returned in
+  // either order, so defer FK enforcement and validate before committing.
+  currentDb.pragma('foreign_keys = OFF');
   currentDb.exec('BEGIN IMMEDIATE');
+  let attached = false;
+  let committed = false;
 
   try {
     // ATTACH once outside the loop — avoids repeated injection attempts and is faster
     currentDb.exec(`ATTACH DATABASE '${safeBackupPath}' AS _restore_src`);
+    attached = true;
 
     for (const tableName of commonTables) {
       // ── Guard: skip tables whose name isn't a plain SQL identifier ──────────
@@ -609,8 +641,15 @@ function dataOnlyRestore(backupPath: string, backupVersion: number, currentVersi
       console.log(`[DB] Restored ${tableName}: ${commonCols.length} columns`);
     }
 
-    currentDb.exec('DETACH DATABASE _restore_src');
+    const foreignKeyProblems = currentDb.pragma('foreign_key_check') as unknown[];
+    if (foreignKeyProblems.length > 0) {
+      throw new Error('Restored data contains invalid relationships');
+    }
+
     currentDb.exec('COMMIT');
+    committed = true;
+    currentDb.exec('DETACH DATABASE _restore_src');
+    attached = false;
 
     return {
       success: true,
@@ -620,7 +659,10 @@ function dataOnlyRestore(backupPath: string, backupVersion: number, currentVersi
       tablesRestored
     };
   } catch (error: any) {
-    currentDb.exec('ROLLBACK');
+    if (!committed) currentDb.exec('ROLLBACK');
+    if (attached) {
+      try { currentDb.exec('DETACH DATABASE _restore_src'); } catch { /* best-effort after rollback */ }
+    }
     console.error('[DB] dataOnlyRestore failed:', error);
     return {
       success: false,
@@ -631,6 +673,7 @@ function dataOnlyRestore(backupPath: string, backupVersion: number, currentVersi
       error: error.message
     };
   } finally {
+    currentDb.pragma('foreign_keys = ON');
     backupDb.close();
   }
 }
@@ -1534,7 +1577,7 @@ function runMigrations(
       backupDir: getBackupDir(),
       fromVersion: current,
       targetVersion: target,
-      appVersion: app.getVersion(),
+      appVersion: runtimeAppVersion(),
       dependencies: preMigrationBackupDependencies,
     });
     console.log(`[DB] Required pre-migration backup verified (schema v${backup.schemaVersion})`);

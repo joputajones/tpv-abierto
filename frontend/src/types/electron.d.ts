@@ -4,6 +4,19 @@
  */
 
 export interface ElectronAPI {
+  // Disposable backup validation assistant
+  chooseRecoveryBackup: () => Promise<{ selected: boolean; token?: string }>;
+  startRecoveryCheck: (token: string) => Promise<{
+    success: boolean;
+    cancelled?: boolean;
+    error?: string;
+    reportId?: string;
+    report?: RecoveryAssistantReport;
+  }>;
+  cancelRecoveryCheck: () => Promise<{ cancelled: boolean }>;
+  saveRecoveryReport: (reportId: string) => Promise<{ saved: boolean; error?: string }>;
+  onRecoveryProgress: (callback: (progress: { state: RecoveryAssistantState }) => void) => (() => void);
+
   // Menu
   onMenuAction: (callback: (action: string) => void) => (() => void);
 
@@ -39,6 +52,26 @@ export interface ElectronAPI {
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
 
   // Platform
+  platform: string;
+}
+
+export type RecoveryAssistantState = 'idle' | 'selected' | 'checking' | 'restoring' | 'reopening' | 'writing' | 'complete' | 'cancelled' | 'failed';
+export type RecoveryOverallStatus = 'green' | 'yellow' | 'red';
+
+export interface RecoveryAssistantReport {
+  reportVersion: 1;
+  dateUtc: string;
+  appVersion: string;
+  overallStatus: RecoveryOverallStatus;
+  checkResults: { id: string; status: 'passed' | 'warning' | 'failed' }[];
+  warnings: string[];
+  recommendedAction: string;
+  backupSize: number | null;
+  backupSchemaVersion: number | null;
+  manifestFormatVersion: number | null;
+  checksumMatched: boolean | null;
+  testRestoreSucceeded: boolean;
+  testWriteSucceeded: boolean;
   platform: string;
 }
 

@@ -24,6 +24,26 @@ import { initFromDb as initWhatsAppFromDb, shutdown as shutdownWhatsApp } from '
 import log from 'electron-log/main';
 import { autoUpdater } from 'electron-updater';
 import { isAllowedLocalWindowUrl, isSafeExternalUrl } from './security/url-allowlist';
+import {
+  closeRecoveryAssistant,
+  openRecoveryAssistantWindow,
+  registerRecoveryAssistantIpc,
+  startRecoveryAssetServer,
+  type RecoveryAssetServer,
+} from './recovery-assistant';
+
+const isRecoveryAssistantMode = process.argv.includes('--recovery-assistant');
+const recoveryShellUserData = isRecoveryAssistantMode
+  ? path.join(os.tmpdir(), 'flo-recovery-assistant-shell', `${process.pid}`)
+  : null;
+
+if (recoveryShellUserData) {
+  app.setPath('userData', recoveryShellUserData);
+  app.commandLine.appendSwitch('disable-background-networking');
+  app.commandLine.appendSwitch('disable-component-update');
+  app.commandLine.appendSwitch('disable-domain-reliability');
+  app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication,OptimizationHints,MediaRouter');
+}
 
 // ── GPU compatibility ────────────────────────────────────────────────────────
 // On Windows, some systems hit "GPU process exited unexpectedly" (exit code
@@ -211,6 +231,7 @@ let tray: Tray | null = null;
 let bonjour: InstanceType<typeof Bonjour> | null = null;
 let isQuitting = false;
 let hasCleanedUp = false;
+let recoveryAssetServer: RecoveryAssetServer | null = null;
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -221,18 +242,20 @@ let gotSingleInstanceLock = false;
 // Prevent multiple instances of the app from running simultaneously.
 // This is especially important on Linux where the AppImage can be launched
 // multiple times without the OS preventing it.
-if (process.platform === 'linux') {
+if (process.platform === 'linux' && !isRecoveryAssistantMode) {
   // Explicitly set app name and userData path to prevent Electron from
   // resolving them inside temporary mount paths (e.g. /tmp/.mount_FloXXXXXX)
   app.name = 'flo-desktop';
   app.setPath('userData', path.join(os.homedir(), '.config', 'flo-desktop'));
 }
 
-gotSingleInstanceLock = app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) {
-  console.log('[Lock] Another instance is already running. Quitting.');
-  app.quit();
-  process.exit(0);
+if (!isRecoveryAssistantMode) {
+  gotSingleInstanceLock = app.requestSingleInstanceLock();
+  if (!gotSingleInstanceLock) {
+    console.log('[Lock] Another instance is already running. Quitting.');
+    app.quit();
+    process.exit(0);
+  }
 }
 
 if (gotSingleInstanceLock) {
@@ -547,6 +570,15 @@ function createMenu(): void {
       ],
     },
     {
+      label: 'Herramientas',
+      submenu: [
+        {
+          label: 'Comprobar copia de seguridad',
+          click: () => openRecoveryAssistantWindow(`http://localhost:${PORT}`),
+        },
+      ],
+    },
+    {
       label: 'Window',
       submenu: [
         { label: 'Flo Cafe', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
@@ -635,6 +667,7 @@ async function initialize(): Promise<void> {
 
     console.log('[Flo] Registering IPC handlers...');
     registerIpcHandlers();
+    registerRecoveryAssistantIpc();
 
     ipcMain.handle('get-update-status', () => ({
       status: updateDownloaded ? 'ready-to-install' as const
@@ -714,15 +747,92 @@ async function initialize(): Promise<void> {
   }
 }
 
-app.whenReady().then(initialize);
+async function initializeRecoveryAssistant(): Promise<void> {
+  try {
+    recoveryAssetServer = await startRecoveryAssetServer();
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{
+      label: 'Herramientas',
+      submenu: [{
+        label: 'Comprobar copia de seguridad',
+        click: () => {
+          if (recoveryAssetServer) openRecoveryAssistantWindow(recoveryAssetServer.baseUrl);
+        },
+      }],
+    }]));
+    const recoveryWindow = openRecoveryAssistantWindow(recoveryAssetServer.baseUrl);
+    if (process.argv.includes('--recovery-assistant-smoke-exit')) {
+      recoveryWindow.webContents.once('did-finish-load', async () => {
+        try {
+          const deadline = Date.now() + 60_000;
+          let visible = false;
+          while (!visible && Date.now() < deadline) {
+            visible = await recoveryWindow.webContents.executeJavaScript(
+              "document.querySelector('[data-testid=recovery-assistant]') !== null",
+            );
+            if (!visible) await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          const resultFile = process.env.FLO_RECOVERY_SMOKE_RESULT;
+          if (!visible || !resultFile) throw new Error('RECOVERY_ASSISTANT_SMOKE_FAILED');
+          if (process.env.FLO_RECOVERY_TEST_SELECTION) {
+            await recoveryWindow.webContents.executeJavaScript(
+              "document.querySelector('[data-testid=choose-backup]').click()",
+            );
+            let state = '';
+            while (state !== 'selected' && Date.now() < deadline) {
+              state = await recoveryWindow.webContents.executeJavaScript(
+                "document.querySelector('[data-testid=recovery-assistant]')?.getAttribute('data-state') || ''",
+              );
+              if (state !== 'selected') await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            if (state !== 'selected') throw new Error('RECOVERY_ASSISTANT_SELECTION_FAILED');
+            await recoveryWindow.webContents.executeJavaScript(
+              "document.querySelector('[data-testid=start-check]').click()",
+            );
+            let green = false;
+            while (!green && Date.now() < deadline) {
+              const red = await recoveryWindow.webContents.executeJavaScript(
+                "document.querySelector('[data-testid=result-red]') !== null",
+              );
+              if (red) throw new Error('RECOVERY_ASSISTANT_PACKAGED_CHECK_RED');
+              green = await recoveryWindow.webContents.executeJavaScript(
+                "document.querySelector('[data-testid=result-green]') !== null",
+              );
+              if (!green) await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            if (!green) throw new Error('RECOVERY_ASSISTANT_PACKAGED_CHECK_FAILED');
+          }
+          fs.writeFileSync(resultFile, 'ok\n', { encoding: 'utf8', flag: 'wx' });
+          app.quit();
+        } catch {
+          app.exit(1);
+        }
+      });
+    }
+    console.log('[Recovery Assistant] Ready in isolated mode.');
+  } catch {
+    dialog.showErrorBox(
+      'No se puede abrir el comprobador',
+      'No se ha podido abrir la herramienta. Cierra FloCafe y vuelve a intentarlo.',
+    );
+    app.quit();
+  }
+}
+
+app.whenReady().then(isRecoveryAssistantMode ? initializeRecoveryAssistant : initialize);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (isRecoveryAssistantMode || process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('activate', () => {
+  if (isRecoveryAssistantMode) {
+    if (BrowserWindow.getAllWindows().length === 0 && recoveryAssetServer) {
+      openRecoveryAssistantWindow(recoveryAssetServer.baseUrl);
+    }
+    return;
+  }
   if (mainWindow === null) {
     createWindow();
   } else {
@@ -735,6 +845,19 @@ function runCleanup(): void {
   if (hasCleanedUp) return;
   hasCleanedUp = true;
   console.log('[Flo] Running cleanup...');
+
+  if (isRecoveryAssistantMode) {
+    void closeRecoveryAssistant();
+    if (recoveryAssetServer) {
+      void recoveryAssetServer.close();
+      recoveryAssetServer = null;
+    }
+    if (recoveryShellUserData) {
+      try { fs.rmSync(recoveryShellUserData, { recursive: true, force: true }); } catch { /* cache may still be in use */ }
+    }
+    console.log('[Recovery Assistant] Closed.');
+    return;
+  }
 
   // Destroy tray to prevent ghost icons on X11/GNOME/KDE
   if (tray) {
