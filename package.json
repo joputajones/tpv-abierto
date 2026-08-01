@@ -67,6 +67,7 @@
     "test:integration-payments": "node tests/run-electron-node-test.cjs tests/integration-payments.test.ts",
     "test:integration-lifecycle": "node tests/run-electron-node-test.cjs tests/integration-order-lifecycle.test.ts",
     "test:restart-recovery": "node tests/run-electron-node-test.cjs tests/restart-recovery-matrix.test.cjs",
+    "test:full-offline-operation": "node tests/run-electron-node-test.cjs tests/full-offline-operation.test.cjs",
     "test:integration-reconciliation": "node tests/run-electron-node-test.cjs tests/integration-bill-reconciliation.test.ts",
     "test:integration-loyalty": "node tests/run-electron-node-test.cjs tests/integration-loyalty.test.ts",
     "test:integration-discount": "node tests/run-electron-node-test.cjs tests/integration-discount-edge.test.ts",
