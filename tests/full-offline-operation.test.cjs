@@ -8,6 +8,7 @@ const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const electronPath = require('electron');
 
 const repositoryRoot = path.resolve(__dirname, '..');
 const workerPath = path.join(__dirname, 'offline-operation-worker.cjs');
@@ -108,7 +109,7 @@ class WorkerController {
       FLO_OFFLINE_USER_DATA: userDataPath,
       JWT_SECRET: 'SYNTHETIC-OFFLINE-JWT-SECRET-NOT-FOR-PRODUCTION',
     };
-    this.child = spawn(process.execPath, [
+    this.child = spawn(electronPath, [
       tsNodeBin,
       '--transpile-only',
       '-P',
@@ -259,7 +260,7 @@ function runRendererProbe({ apiPort, userDataPath }) {
   return withTimeout(new Promise((resolve, reject) => {
     const env = { ...process.env, FLO_OFFLINE_RENDERER_PORT: String(apiPort), FLO_OFFLINE_RENDERER_USER_DATA: userDataPath };
     delete env.ELECTRON_RUN_AS_NODE;
-    const child = spawn(process.execPath, [
+    const child = spawn(electronPath, [
       '--headless',
       '--disable-gpu',
       '--no-sandbox',
