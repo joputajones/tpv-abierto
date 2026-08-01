@@ -340,3 +340,23 @@ fiscalidad. PR #41, #42 y #44 están fusionadas. El run post-merge
 `30711604415` pasa suite y empaquetado en Ubuntu, Windows, macOS x64 y macOS
 arm64; CI y restore integrados también pasan desde `a6724c56`.
 CORE-004 es `DONE` solo a nivel `SIM/CI`; R-011 y R-018 permanecen `PARTIAL`.
+
+## Asistente gráfico de recuperación (rama #39)
+
+`Herramientas → Comprobar copia de seguridad` abre la ruta estática
+`/recovery-assistant/` mediante el preload existente. El renderer solo recibe
+identificadores opacos y estados saneados; las rutas permanecen en el proceso
+principal.
+
+El padre crea `<temp>/flo-recovery-check/<uuid>/` con un marcador específico y
+lanza `recovery-assistant-worker.js`. El worker reutiliza
+`backup-package-validation.ts`, abre el origen en solo lectura, comprueba
+integridad y versión, inicializa `db.ts` en una ruta desechable, llama a
+`restoreBackup()`, reabre y persiste un valor sintético
+`SYNTHETIC-RECOVERY-CHECK-*`. El padre elimina el sandbox y solo considera
+obsoletos directorios que contienen el marcador.
+
+`--recovery-assistant` asigna a Electron un perfil temporal separado y sirve
+solo `frontend/out` en un puerto loopback efímero. No llama al inicializador
+normal de base activa, API, KDS, cloud, telemetría, Google Drive, WhatsApp,
+mDNS, actualización ni impresión.

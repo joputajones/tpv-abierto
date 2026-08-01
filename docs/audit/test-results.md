@@ -909,3 +909,74 @@ CORE-004 vuelve a `DONE` exclusivamente a nivel `SIM/CI`. R-011 y R-018 siguen
 `PARTIAL`, #39 sigue abierta y M0 continúa `IN_PROGRESS`. La evidencia no se
 extiende a desconexión física, LAN hostil, hardware, móviles, turno completo,
 restaurante real, cloud real ni cumplimiento fiscal.
+
+## Evidencia local previa a PR del asistente gráfico #39
+
+Rama `feat/non-technical-recovery-assistant`, iniciada desde
+`f502b0d766fa25cb0aad0f4e8ebf7b3736f281c0`. Solo se usaron paquetes y bases
+sintéticas desechables.
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:off-device-restore` | 0 / 7,3 s | A-01/A-02 y B-01…B-07 siguen pasando tras extraer la validación a producción |
+| `npm.cmd run test:recovery-assistant` | 0 / 30,7 s | A-01…A-13 PASS; fuente intacta y sandbox eliminado |
+| `node tests/recovery-assistant-e2e.test.cjs` | 0 / 8,4 s | A-14…A-16 PASS con Electron real, menú, teclado, progreso, informe, verde/rojo y cero conexiones externas |
+| `npm.cmd run build` | 0 / 22,2 s | TypeScript y assets PASS |
+| `npm.cmd run build:frontend` | 0 / 98,7 s | 23 rutas estáticas, incluida `/recovery-assistant`; 0 vulnerabilidades frontend |
+| `npm.cmd ci` | 0 / 91,9 s | 648 paquetes, rebuild nativo y verificación Electron; 1 vulnerabilidad moderada raíz y aviso `@types/bcryptjs` |
+| `npm.cmd run test:full-offline-operation` | 0 | O-01…O-16 + O-FP PASS; 0 conexiones Internet exitosas |
+| `npm.cmd run test:restart-recovery` | 0 | R-01…R-12 PASS y limpieza completa |
+| `npm.cmd run lint` (final) | 0 | 0 errores y 677 advertencias heredadas |
+| `npm.cmd run build` + `build:frontend` (final) | 0 | TypeScript PASS; 23 rutas y 0 vulnerabilidades frontend |
+| `npm.cmd test` (final) | 0 / incluido en bloque de 810,6 s | 71/71 scripts PASS sin Bash; el bloque incluye lint y ambos builds previos |
+| empaquetado Windows x64 + verificador | 0 / 70,4 s | ASAR contiene módulos/worker/assets y el `.exe` completa paquete sintético con resultado verde |
+
+Falso positivo: se cambió temporalmente A-03 para esperar verde ante un
+checksum alterado. El runner terminó con código 1 en 6,4 s e identificó
+`'red' !== 'green'`; el cambio se revirtió por completo y A-03 volvió a pasar.
+
+El primer smoke empaquetado solo comprobaba que cargase la UI. Al reforzarlo
+para exigir una restauración completa, falló porque `db.js` cargaba el módulo
+de desarrollo `electron` dentro del worker empaquetado. El acceso se hizo
+diferido y la ruta/versión temporal explícita; la repetición Windows completó
+validación, restore, reapertura y escritura desde ASAR. Linux y macOS x64/arm64
+quedan pendientes de la matriz CI, que ejecuta el mismo verificador tras
+empaquetar.
+
+La CI y la matriz remota siguen pendientes. #39, R-011 y M0
+conservan respectivamente `OPEN`, `PARTIAL` e `IN_PROGRESS`; no se afirma que
+la automatización equivalga a la prueba humana preparada.
+
+### Revalidación definitiva antes de publicar la PR #39
+
+Tras sustituir la vigilancia de toda la carpeta de origen por la comprobación
+exclusiva de sidecars SQLite y añadir la matriz multiplataforma al evento
+`pull_request`, se repitió el protocolo completo:
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm run test:recovery-assistant` | 0 / 47,0 s | A-01…A-13 PASS |
+| `npm run test:recovery-assistant-e2e` | 0 / 195,2 s | Build limpio y A-14…A-16 PASS con Electron real y cero conexiones externas |
+| `npm run test:off-device-restore` | 0 / 18,1 s | A-01/A-02 y B-01…B-07 PASS usando la lógica de producción compartida |
+| `npm run test:off-device-backup` | 1 / 2,2 s | Error de operador documentado: el script no existe; se corrigió al nombre `test:off-device-restore` |
+| `npm run lint` | 0 / 62,6 s | 0 errores; 677 advertencias conocidas |
+| `npm run build` | 0 / 41,1 s | TypeScript y assets PASS |
+| `npm run build:frontend` | 0 / 100,2 s | 23 rutas estáticas; 0 vulnerabilidades frontend |
+| `npm test` | 0 / 428,6 s | 71/71 scripts PASS; trazas negativas deliberadas sin fallo del runner |
+| `npm run build:win` | 0 / 216,4 s | Windows x64, ASAR, `better-sqlite3` y NSIS generados correctamente |
+| `node scripts/verify-recovery-assistant-package.cjs` | 0 / 7,2 s | El ejecutable empaquetado restaura, reabre, escribe y devuelve verde en aislamiento |
+
+Al finalizar no había procesos Electron ni listeners en 3001/3002. La raíz
+temporal `%TEMP%/flo-recovery-check` quedó vacía y no se versionó ningún
+paquete, base, sidecar, log o informe generado. Los finales de línea CRLF que
+Git anuncia en Windows son avisos de conversión del árbol de trabajo, no
+errores de contenido. Linux y macOS x64/arm64 siguen pendientes de la matriz
+remota exigida antes de cualquier merge.
+
+Una revisión adversarial posterior hizo fail-safe el error de arranque del
+worker, evitó marcar pasos visuales antes de confirmarlos y capturó fallos IPC
+con mensajes no técnicos. La revalidación final dio: A-01…A-13 en 41,1 s;
+lint en 59,7 s (0 errores/677 advertencias); build principal en 43,2 s;
+frontend en 123,4 s; `npm test` 71/71 en 547,5 s; paquete Windows x64 `--dir`
+en 50,8 s; y ejecución sintética del binario empaquetado en 7,1 s, todo con
+código 0.
