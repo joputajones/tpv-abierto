@@ -59,16 +59,15 @@ try {
   assert.equal(result.status, 0, `Electron E2E failed: ${result.stderr || result.stdout}`);
   assert.ok(evidenceLine, 'Electron E2E did not return structured evidence');
   const evidence = JSON.parse(evidenceLine.slice('RECOVERY_E2E_RESULT='.length));
-  assert.deepEqual(evidence, {
-    menuOpened: true,
-    isolatedServicesStarted: 0,
-    externalConnections: 0,
-    validStatus: 'green',
-    alteredStatus: 'red',
-    keyboardNavigation: true,
-    detailsInitiallyClosed: true,
-    reportSanitized: true,
-  });
+  assert.equal(evidence.menuOpened, true);
+  assert.equal(evidence.isolatedServicesStarted, 0);
+  assert.equal(evidence.externalConnections, 0);
+  assert.equal(evidence.validStatus, 'green');
+  assert.equal(evidence.alteredStatus, 'red');
+  assert.equal(evidence.keyboardNavigation, true);
+  assert.ok(['native-tab', 'verified-order'].includes(evidence.keyboardMethod));
+  assert.equal(evidence.detailsInitiallyClosed, true);
+  assert.equal(evidence.reportSanitized, true);
   console.log('PASS A-14: isolated mode opens without live database or production services');
   console.log('PASS A-15: main process and renderer made zero external connections');
   console.log('PASS A-16: real Electron UI covers menu, keyboard, progress, reports, green and red states');

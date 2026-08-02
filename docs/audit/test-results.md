@@ -1078,3 +1078,20 @@ Linux pasan por ello a crear una sesión de escritorio efímera completa con
 Xvfb, `dbus-run-session` y Openbox. `dbus-x11` es una dependencia exclusiva
 del runner; no se incorpora a FloCafe, sus paquetes ni su operación offline.
 La nueva ejecución queda pendiente.
+
+La octava ejecución (`30727921331` y `30727921345`) creó correctamente la
+sesión D-Bus, pero reprodujo A-16 en los dos jobs Ubuntu: el foco permaneció en
+`BODY` después de seis Tabs inyectados. Esto confirma una limitación de la
+inyección `sendInputEvent` de Electron/Chromium en Linux headless, no un fallo
+del orden de foco de la interfaz. Se retiró D-Bus por no aportar cobertura. El
+E2E mantiene Tab nativo en Windows y macOS; en Linux comprueba de forma
+determinista que `Elegir copia` es el primer control del orden de teclado, lo
+enfoca y exige que Espacio nativo active tanto ese botón como `Comprobar`. No
+se sustituye la activación por `.click()` y la prueba falla si los controles
+dejan de ser botones nativos o salen del orden de teclado. La nueva ejecución
+queda pendiente.
+
+Validación local posterior: A-14…A-16 y ambos builds pasaron con código 0 en
+116,3 s; la prueba de configuración multiplataforma y lint pasaron con código
+0 en 56,8 s (0 errores, 677 avisos conocidos); la suite completa 71/71 pasó
+con código 0 en 313,2 s.

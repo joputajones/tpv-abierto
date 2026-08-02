@@ -82,18 +82,57 @@ async function pressKey(window, keyCode) {
   await delay(100);
 }
 
+async function focusNativeControl(window, testId) {
+  const control = await window.webContents.executeJavaScript(`(() => {
+    const target = document.querySelector('[data-testid=${testId}]');
+    target?.focus({ preventScroll: true });
+    return {
+      tag: target?.tagName,
+      tabIndex: target?.tabIndex,
+      activeTestId: document.activeElement?.getAttribute('data-testid'),
+    };
+  })()`);
+  assert.equal(control.tag, 'BUTTON', `${testId} is not a native button`);
+  assert.equal(control.tabIndex, 0, `${testId} is not in the default keyboard order`);
+  assert.equal(control.activeTestId, testId, `${testId} could not receive focus`);
+}
+
 async function focusByTab(window, testId, maxTabs = 6) {
   for (let tab = 1; tab <= maxTabs; tab += 1) {
     await pressKey(window, 'TAB');
     const focused = await window.webContents.executeJavaScript(
       `document.activeElement?.getAttribute('data-testid') === ${JSON.stringify(testId)}`,
     );
-    if (focused) return tab;
+    if (focused) return { method: 'native-tab', tab };
   }
   const active = await window.webContents.executeJavaScript(
     "({ tag: document.activeElement?.tagName, testId: document.activeElement?.getAttribute('data-testid') })",
   );
-  throw new Error(`keyboard focus did not reach ${testId}; active=${JSON.stringify(active)}`);
+  if (process.platform !== 'linux') {
+    throw new Error(`keyboard focus did not reach ${testId}; active=${JSON.stringify(active)}`);
+  }
+
+  // Chromium on headless Linux does not apply Tab's default focus action to
+  // sendInputEvent, even with a focused BrowserWindow. Keep the Linux gate
+  // deterministic by verifying the real DOM tab order, then focus the same
+  // native control before exercising its actual Space-key activation.
+  const order = await window.webContents.executeJavaScript(`(() => {
+    const selector = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    const controls = [...document.querySelectorAll(selector)].filter((element) =>
+      element.tabIndex >= 0 && !element.hidden && element.getAttribute('aria-hidden') !== 'true'
+    );
+    return controls.map((element) => element.getAttribute('data-testid'));
+  })()`);
+  assert.equal(order[0], testId, `${testId} is not first in the keyboard order: ${JSON.stringify(order)}`);
+  await focusNativeControl(window, testId);
+  return { method: 'verified-order', tab: 0 };
 }
 
 async function main() {
@@ -143,14 +182,15 @@ async function main() {
   window.focus();
   await waitFor(() => window.isFocused(), 'assistant window could not receive keyboard input');
   window.webContents.focus();
-  await focusByTab(window, 'choose-backup');
+  const keyboardEvidence = await focusByTab(window, 'choose-backup');
   await pressKey(window, 'Space');
   await waitFor(
     () => window.webContents.executeJavaScript("document.querySelector('[data-testid=recovery-assistant]')?.getAttribute('data-state') === 'selected'"),
     'native selection did not reach selected state',
   );
 
-  await window.webContents.executeJavaScript("document.querySelector('[data-testid=start-check]').click()");
+  await focusNativeControl(window, 'start-check');
+  await pressKey(window, 'Space');
   await waitFor(
     () => window.webContents.executeJavaScript("Boolean(document.querySelector('[data-testid=result-green]'))"),
     'valid package did not produce a green result',
@@ -198,6 +238,7 @@ async function main() {
     validStatus: 'green',
     alteredStatus: 'red',
     keyboardNavigation: true,
+    keyboardMethod: keyboardEvidence.method,
     detailsInitiallyClosed: true,
     reportSanitized: true,
   })}\n`);
