@@ -1008,3 +1008,24 @@ verificador Windows empaquetado pasaron; el protocolo posterior completo
 (`lint`, build principal, build frontend y 71/71) terminó con código 0 en
 682,3 s, con los 677 avisos de lint ya registrados. La nueva ejecución queda
 pendiente.
+
+La tercera ejecución (`30725166044`) permitió arrancar Electron en Ubuntu con
+el sandbox de Chromium desactivado solo para test y alcanzó A-16. El evento Tab
+enviado con `webContents.sendInputEvent` no actuó porque esa API requiere una
+ventana enfocada y `xvfb-run` no ejecuta un gestor de ventanas. El E2E conserva
+la prueba real del orden de foco, pero envía Tab mediante
+`Input.dispatchKeyEvent` de Chromium, independiente del foco del sistema. No
+se modificó la interfaz ni se sustituyó la navegación por una asignación de
+foco programática.
+
+La misma ejecución confirmó macOS arm64 completamente (71/71, paquete y smoke
+del asistente). macOS x64 también pasó 71/71 y generó el paquete con su binario
+nativo, pero `macos-latest` era un runner ARM64 y el smoke x64 no llegó a crear
+su resultado. La matriz asigna desde entonces `macos-15-intel` a x64 y conserva
+`macos-latest` para arm64, de modo que cada aplicación empaquetada se ejecuta
+en su arquitectura nativa. La nueva ejecución queda pendiente.
+
+Evidencia local posterior: A-14…A-16 con Electron/frontend reales, incluido
+Tab mediante Chromium, pasaron con código 0 en 166,1 s. La prueba de matriz,
+lint (0 errores/677 avisos), build principal, build frontend y la suite 71/71
+pasaron después con código 0 en 635 s.

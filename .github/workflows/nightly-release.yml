@@ -26,11 +26,9 @@ jobs:
           - os: ubuntu-latest
             target: --linux
             extra-deps: sudo apt-get update -qq && sudo apt-get install -y fakeroot dpkg
-          # better-sqlite3 >= v13 ships prebuilt binaries for all platforms,
-          # so no native cross-compilation is needed. Both builds run on the
-          # same ARM64 runner; electron-builder packages the correct prebuild
-          # and afterPack.js validates the architecture.
-          - os: macos-latest
+          # Run each macOS package on its native architecture so the packaged
+          # recovery-assistant smoke test exercises the executable itself.
+          - os: macos-15-intel
             target: --mac --x64
             extra-deps: echo "No extra deps needed"
           - os: macos-latest
