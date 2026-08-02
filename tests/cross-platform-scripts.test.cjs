@@ -69,6 +69,8 @@ async function main() {
   assert.match(recoveryE2eSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);
+  assert.equal(packageVerifierSource.includes("path.join(path.dirname(resources), 'MacOS')"), true);
+  assert.equal(packageVerifierSource.includes("candidate.includes('.app/Contents/MacOS/')"), false);
 
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
   const noBashPathEntries = [path.dirname(process.execPath)];

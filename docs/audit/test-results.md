@@ -996,3 +996,15 @@ solo a los lanzamientos Electron de test en Linux. La aplicación distribuida
 no recibe ese flag. Evidencia local posterior: scripts multiplataforma 0/2,1
 s; A-14…A-16 0/137 s; ejecutable empaquetado 0/6,6 s; lint 0/46,5 s con 677
 avisos; y suite 71/71 0/566,4 s. La segunda CI queda pendiente.
+
+La segunda ejecución (`30724645927`) confirmó la normalización ASAR, pero el
+job macOS arm64 detectó que el verificador recursivo podía escoger el binario
+de `Flo Cafe Helper.app` antes que el ejecutable principal. El paquete y su
+binario nativo se habían generado correctamente y la suite 71/71 había pasado.
+El arnés se corrigió para derivar el ejecutable exclusivamente del directorio
+`Contents/MacOS` correspondiente al mismo `Resources/app.asar` validado, sin
+modificar la aplicación ni el empaquetado. La comprobación localizada y el
+verificador Windows empaquetado pasaron; el protocolo posterior completo
+(`lint`, build principal, build frontend y 71/71) terminó con código 0 en
+682,3 s, con los 677 avisos de lint ya registrados. La nueva ejecución queda
+pendiente.

@@ -45,7 +45,12 @@ let executable;
 if (process.platform === 'win32') {
   executable = findRecursive(releaseRoot, (candidate, entry) => entry.isFile() && /Flo Cafe\.exe$/i.test(candidate));
 } else if (process.platform === 'darwin') {
-  executable = findRecursive(releaseRoot, (candidate, entry) => entry.isFile() && candidate.includes('.app/Contents/MacOS/'));
+  const macExecutableDirectory = path.join(path.dirname(resources), 'MacOS');
+  executable = fs.existsSync(macExecutableDirectory)
+    ? fs.readdirSync(macExecutableDirectory, { withFileTypes: true })
+      .find((entry) => entry.isFile())
+    : null;
+  executable = executable ? path.join(macExecutableDirectory, executable.name) : null;
 } else {
   executable = findRecursive(releaseRoot, (candidate, entry) => entry.isFile() && path.basename(candidate) === 'flocafe' && candidate.includes('linux-unpacked'));
 }
