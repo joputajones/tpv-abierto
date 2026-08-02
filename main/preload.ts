@@ -1,6 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  chooseRecoveryBackup: () => ipcRenderer.invoke('recovery-assistant:choose'),
+  startRecoveryCheck: (token: string) => ipcRenderer.invoke('recovery-assistant:start', token),
+  cancelRecoveryCheck: () => ipcRenderer.invoke('recovery-assistant:cancel'),
+  saveRecoveryReport: (reportId: string) => ipcRenderer.invoke('recovery-assistant:save-report', reportId),
+  onRecoveryProgress: (callback: (progress: { state: string }) => void) => {
+    const handler = (_event: any, progress: { state: string }) => callback(progress);
+    ipcRenderer.on('recovery-assistant:progress', handler);
+    return () => { ipcRenderer.removeListener('recovery-assistant:progress', handler); };
+  },
   backupDatabase: (pin?: string) => ipcRenderer.invoke('backup-database', pin),
   restoreBackup: (pin?: string, backupPath?: string) => ipcRenderer.invoke('restore-backup', pin, backupPath),
   dbHealthCheck: () => ipcRenderer.invoke('db-health-check'),

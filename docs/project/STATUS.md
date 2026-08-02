@@ -67,6 +67,13 @@ recovery. BACKUP-002 and R-011 therefore remain `PARTIAL`; the non-technical
 recovery assistant is tracked in open issue
 [#39](https://github.com/joputajones/tpv-abierto/issues/39).
 
+The #39 implementation branch now contains the graphical assistant, a native
+picker, disposable production restore/reopen/write path, sanitized reports and
+local A-01…A-16 evidence in real Electron. It has not yet passed the complete
+CI/packaging gate or merged, and no non-technical person has executed the human
+script. Consequently #39 remains open, R-011 remains `PARTIAL` and M0 remains
+`IN_PROGRESS`.
+
 Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) is closed by
 PR #41 and corrective PRs #42/#44. Dedicated Windows/Ubuntu jobs and the
 post-merge Full Cross-Platform Matrix `30711604415` pass on Ubuntu, Windows,
@@ -104,7 +111,7 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. #34 is closed after a successful second-operator restore on another physical computer, but advanced technical checks were incomplete and the runbook was not suitable for non-technical staff; #39 remains open |
+| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. The #39 branch adds a graphical disposable checker and local A-01…A-16 evidence, but merge, four-platform CI and a real non-technical run remain pending; #39 stays open |
 | Internet-loss test | `DONE` (`SIM/CI` only) | #40 is closed; PR #41/#42/#44, integrated `main` and Full Cross-Platform Matrix `30711604415` pass O-01…O-16 + O-FP with API/KDS/frontend/renderer isolated to loopback and zero Internet successes. Physical disconnection, hostile LAN, hardware, phones and long-duration service are not covered |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |

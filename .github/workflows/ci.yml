@@ -115,10 +115,13 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
+      - name: Install virtual window manager
+        run: sudo apt-get update -qq && sudo apt-get install -y openbox
+
       - name: Core test suite (Includes smoke & kds integration)
         # The suite contains a hidden real Electron renderer. Ubuntu runners
-        # have no display server, so provide an isolated virtual X display.
-        run: xvfb-run -a npm test
+        # have no desktop, so provide an isolated X display and window manager.
+        run: xvfb-run -a sh -c 'openbox >/tmp/flo-openbox.log 2>&1 & npm test'
 
   # 5. Full local-only operation on both supported CI operating systems.
   # PowerShell is deliberate: the matrix itself and its launcher do not rely

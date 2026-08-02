@@ -3,6 +3,8 @@ name: Full Cross-Platform Matrix
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: '0 0 * * *' # Nightly
   workflow_dispatch:
@@ -23,12 +25,10 @@ jobs:
         include:
           - os: ubuntu-latest
             target: --linux
-            extra-deps: sudo apt-get update -qq && sudo apt-get install -y fakeroot dpkg
-          # better-sqlite3 >= v13 ships prebuilt binaries for all platforms,
-          # so no native cross-compilation is needed. Both builds run on the
-          # same ARM64 runner; electron-builder packages the correct prebuild
-          # and afterPack.js validates the architecture.
-          - os: macos-latest
+            extra-deps: sudo apt-get update -qq && sudo apt-get install -y fakeroot dpkg openbox
+          # Run each macOS package on its native architecture so the packaged
+          # recovery-assistant smoke test exercises the executable itself.
+          - os: macos-15-intel
             target: --mac --x64
             extra-deps: echo "No extra deps needed"
           - os: macos-latest
@@ -55,7 +55,19 @@ jobs:
         run: ${{ matrix.extra-deps }}
 
       - name: Install npm dependencies
+        if: matrix.os != 'macos-15-intel'
         run: npm ci
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Install npm dependencies on macOS Intel
+        if: matrix.os == 'macos-15-intel'
+        run: |
+          npm ci --ignore-scripts
+          npx --no-install install-electron
+          codesign --force --deep --sign - --timestamp=none node_modules/electron/dist/Electron.app
+          npx --no-install electron-builder install-app-deps
+          npm run verify:electron
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -73,12 +85,15 @@ jobs:
 
       - name: Run full platform test suite under Xvfb
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm test
+        run: xvfb-run -a sh -c 'openbox >/tmp/flo-openbox.log 2>&1 & npm test'
 
       - name: Package (unpacked directory, no installer)
         run: npx electron-builder ${{ matrix.target }} --dir --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Verify packaged isolated recovery assistant
+        run: node scripts/verify-recovery-assistant-package.cjs
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0

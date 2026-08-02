@@ -54,7 +54,7 @@ async function main() {
   assert.deepEqual(calls, ['first', 'skip', 'failure']);
   assert.deepEqual(aggregateResult, { code: 5, signal: null, failedScript: 'failure' });
 
-  assert.equal(TEST_SCRIPTS.length, 69);
+  assert.equal(TEST_SCRIPTS.length, 71);
   assert.equal(TEST_SCRIPTS[0], 'test:smoke');
   assert.equal(TEST_SCRIPTS.at(-2), 'test:dev-tooling');
   assert.equal(TEST_SCRIPTS.at(-1), 'test:cross-platform-scripts');
@@ -63,6 +63,30 @@ async function main() {
     'node tests/full-offline-operation.test.cjs',
     'the coordinator must run under Node and launch Electron explicitly',
   );
+
+  const recoveryE2eSource = fs.readFileSync(path.join(__dirname, 'recovery-assistant-e2e.test.cjs'), 'utf8');
+  const recoveryE2eProbeSource = fs.readFileSync(path.join(__dirname, 'recovery-assistant-e2e-probe.cjs'), 'utf8');
+  const fullMatrixSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'nightly-release.yml'), 'utf8');
+  const packageVerifierSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'verify-recovery-assistant-package.cjs'), 'utf8');
+  assert.match(recoveryE2eSource, /process\.platform === 'linux'.*--no-sandbox/);
+  assert.match(recoveryE2eProbeSource, /window\.isFocused\(\)/);
+  assert.match(recoveryE2eProbeSource, /webContents\.sendInputEvent/);
+  assert.match(recoveryE2eProbeSource, /pressKey\(window, 'Space'\)/);
+  assert.equal(recoveryE2eProbeSource.includes('document.activeElement.click()'), false);
+  assert.match(recoveryE2eProbeSource, /Page\.bringToFront/);
+  assert.match(recoveryE2eProbeSource, /Emulation\.setFocusEmulationEnabled/);
+  assert.match(recoveryE2eProbeSource, /Input\.dispatchKeyEvent/);
+  assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
+  assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);
+  assert.equal(packageVerifierSource.includes("path.join(path.dirname(resources), 'MacOS')"), true);
+  assert.equal(packageVerifierSource.includes("candidate.includes('.app/Contents/MacOS/')"), false);
+  assert.match(fullMatrixSource, /- os: macos-15-intel\s+target: --mac --x64/);
+  assert.match(fullMatrixSource, /- os: macos-latest\s+target: --mac --arm64/);
+  assert.match(fullMatrixSource, /install -y fakeroot dpkg openbox/);
+  assert.match(fullMatrixSource, /openbox.*npm test/);
+  const ciSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert.match(ciSource, /install -y openbox/);
+  assert.match(ciSource, /openbox.*npm test/);
 
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
   const noBashPathEntries = [path.dirname(process.execPath)];

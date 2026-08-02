@@ -10,7 +10,7 @@ export function getLandingPage(): string {
   return '/pos';
 }
 
-const PUBLIC_PATHS = ['/kds', '/kds-standalone', '/auth/login', '/auth/register', '/auth/recover', '/setup'];
+const PUBLIC_PATHS = ['/kds', '/kds-standalone', '/auth/login', '/auth/register', '/auth/recover', '/setup', '/recovery-assistant'];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
@@ -22,6 +22,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const isPublicPath = PUBLIC_PATHS.some(p => pathname === p || pathname?.startsWith(p + '/'));
   const isSetupPath = pathname === '/setup' || pathname?.startsWith('/setup/');
   const isKdsPath = pathname?.startsWith('/kds');
+  const isRecoveryPath = pathname?.startsWith('/recovery-assistant');
 
   useEffect(() => {
     loadFromStorage();
@@ -29,6 +30,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Single effect: determine where to redirect after auth state + setup status are known
   useEffect(() => {
+    if (isRecoveryPath) return;
     if (loading) return; // wait for auth state to load
 
     // If we don't know setup status yet, fetch it
@@ -64,9 +66,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     } else if (!currentTenant) {
       router.push('/auth/login?select_tenant=true');
     }
-  }, [loading, user, currentTenant, isPublicPath, isSetupPath, isKdsPath, needsSetup, router]);
+  }, [loading, user, currentTenant, isPublicPath, isSetupPath, isKdsPath, isRecoveryPath, needsSetup, router]);
 
-  if (isKdsPath || isSetupPath) {
+  if (isKdsPath || isSetupPath || isRecoveryPath) {
     return <>{children}</>;
   }
 

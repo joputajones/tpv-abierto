@@ -1,5 +1,11 @@
 # Simulacro de restauración fuera del equipo
 
+Para la comprobación ordinaria sin terminal usa primero
+[Comprobar una copia de seguridad](CHECK_A_BACKUP.md). El procedimiento de esta
+página queda como referencia avanzada para soporte y para simulacros físicos;
+no es la instrucción principal destinada a camareros o responsables no
+técnicos.
+
 Este procedimiento está pensado para una persona que no haya participado en el desarrollo. Su objetivo es comprobar una copia en un equipo de recuperación desechable, nunca restaurar directamente sobre el TPV activo.
 
 La automatización de CI usa un paquete sintético y aporta evidencia `CI_CROSS_RUNNER`. Este documento y una ejecución humana real son evidencias distintas. No marques el simulacro humano como superado hasta que otra persona complete la [plantilla de resultado](templates/OFF_DEVICE_RESTORE_RESULT.md).

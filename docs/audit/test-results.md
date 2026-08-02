@@ -909,3 +909,209 @@ CORE-004 vuelve a `DONE` exclusivamente a nivel `SIM/CI`. R-011 y R-018 siguen
 `PARTIAL`, #39 sigue abierta y M0 continúa `IN_PROGRESS`. La evidencia no se
 extiende a desconexión física, LAN hostil, hardware, móviles, turno completo,
 restaurante real, cloud real ni cumplimiento fiscal.
+
+## Evidencia local previa a PR del asistente gráfico #39
+
+Rama `feat/non-technical-recovery-assistant`, iniciada desde
+`f502b0d766fa25cb0aad0f4e8ebf7b3736f281c0`. Solo se usaron paquetes y bases
+sintéticas desechables.
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm.cmd run test:off-device-restore` | 0 / 7,3 s | A-01/A-02 y B-01…B-07 siguen pasando tras extraer la validación a producción |
+| `npm.cmd run test:recovery-assistant` | 0 / 30,7 s | A-01…A-13 PASS; fuente intacta y sandbox eliminado |
+| `node tests/recovery-assistant-e2e.test.cjs` | 0 / 8,4 s | A-14…A-16 PASS con Electron real, menú, teclado, progreso, informe, verde/rojo y cero conexiones externas |
+| `npm.cmd run build` | 0 / 22,2 s | TypeScript y assets PASS |
+| `npm.cmd run build:frontend` | 0 / 98,7 s | 23 rutas estáticas, incluida `/recovery-assistant`; 0 vulnerabilidades frontend |
+| `npm.cmd ci` | 0 / 91,9 s | 648 paquetes, rebuild nativo y verificación Electron; 1 vulnerabilidad moderada raíz y aviso `@types/bcryptjs` |
+| `npm.cmd run test:full-offline-operation` | 0 | O-01…O-16 + O-FP PASS; 0 conexiones Internet exitosas |
+| `npm.cmd run test:restart-recovery` | 0 | R-01…R-12 PASS y limpieza completa |
+| `npm.cmd run lint` (final) | 0 | 0 errores y 677 advertencias heredadas |
+| `npm.cmd run build` + `build:frontend` (final) | 0 | TypeScript PASS; 23 rutas y 0 vulnerabilidades frontend |
+| `npm.cmd test` (final) | 0 / incluido en bloque de 810,6 s | 71/71 scripts PASS sin Bash; el bloque incluye lint y ambos builds previos |
+| empaquetado Windows x64 + verificador | 0 / 70,4 s | ASAR contiene módulos/worker/assets y el `.exe` completa paquete sintético con resultado verde |
+
+Falso positivo: se cambió temporalmente A-03 para esperar verde ante un
+checksum alterado. El runner terminó con código 1 en 6,4 s e identificó
+`'red' !== 'green'`; el cambio se revirtió por completo y A-03 volvió a pasar.
+
+El primer smoke empaquetado solo comprobaba que cargase la UI. Al reforzarlo
+para exigir una restauración completa, falló porque `db.js` cargaba el módulo
+de desarrollo `electron` dentro del worker empaquetado. El acceso se hizo
+diferido y la ruta/versión temporal explícita; la repetición Windows completó
+validación, restore, reapertura y escritura desde ASAR. Linux y macOS x64/arm64
+quedan pendientes de la matriz CI, que ejecuta el mismo verificador tras
+empaquetar.
+
+La CI y la matriz remota siguen pendientes. #39, R-011 y M0
+conservan respectivamente `OPEN`, `PARTIAL` e `IN_PROGRESS`; no se afirma que
+la automatización equivalga a la prueba humana preparada.
+
+### Revalidación definitiva antes de publicar la PR #39
+
+Tras sustituir la vigilancia de toda la carpeta de origen por la comprobación
+exclusiva de sidecars SQLite y añadir la matriz multiplataforma al evento
+`pull_request`, se repitió el protocolo completo:
+
+| Comando | Código / duración | Resultado |
+|---|---:|---|
+| `npm run test:recovery-assistant` | 0 / 47,0 s | A-01…A-13 PASS |
+| `npm run test:recovery-assistant-e2e` | 0 / 195,2 s | Build limpio y A-14…A-16 PASS con Electron real y cero conexiones externas |
+| `npm run test:off-device-restore` | 0 / 18,1 s | A-01/A-02 y B-01…B-07 PASS usando la lógica de producción compartida |
+| `npm run test:off-device-backup` | 1 / 2,2 s | Error de operador documentado: el script no existe; se corrigió al nombre `test:off-device-restore` |
+| `npm run lint` | 0 / 62,6 s | 0 errores; 677 advertencias conocidas |
+| `npm run build` | 0 / 41,1 s | TypeScript y assets PASS |
+| `npm run build:frontend` | 0 / 100,2 s | 23 rutas estáticas; 0 vulnerabilidades frontend |
+| `npm test` | 0 / 428,6 s | 71/71 scripts PASS; trazas negativas deliberadas sin fallo del runner |
+| `npm run build:win` | 0 / 216,4 s | Windows x64, ASAR, `better-sqlite3` y NSIS generados correctamente |
+| `node scripts/verify-recovery-assistant-package.cjs` | 0 / 7,2 s | El ejecutable empaquetado restaura, reabre, escribe y devuelve verde en aislamiento |
+
+Al finalizar no había procesos Electron ni listeners en 3001/3002. La raíz
+temporal `%TEMP%/flo-recovery-check` quedó vacía y no se versionó ningún
+paquete, base, sidecar, log o informe generado. Los finales de línea CRLF que
+Git anuncia en Windows son avisos de conversión del árbol de trabajo, no
+errores de contenido. Linux y macOS x64/arm64 siguen pendientes de la matriz
+remota exigida antes de cualquier merge.
+
+Una revisión adversarial posterior hizo fail-safe el error de arranque del
+worker, evitó marcar pasos visuales antes de confirmarlos y capturó fallos IPC
+con mensajes no técnicos. La revalidación final dio: A-01…A-13 en 41,1 s;
+lint en 59,7 s (0 errores/677 advertencias); build principal en 43,2 s;
+frontend en 123,4 s; `npm test` 71/71 en 547,5 s; paquete Windows x64 `--dir`
+en 50,8 s; y ejecución sintética del binario empaquetado en 7,1 s, todo con
+código 0.
+
+### Primera CI de la PR #46 y corrección del arnés
+
+El head `76bdeaf4` pasó dependency review, invariante fiscal, Playwright,
+offline Windows/Ubuntu, productor/restore Windows/Ubuntu, la suite y el
+empaquetado Windows. El run Full Cross-Platform Matrix `30723820390` encontró
+dos defectos del arnés: macOS x64/arm64 empaquetó y pasó 71/71, pero el
+verificador no eliminaba `/` inicial de las entradas ASAR; Ubuntu y Linux
+baseline abortaron el E2E porque el runner sin privilegios no tenía el helper
+SUID de Chromium con modo 4755. No fue un fallo de restore ni de producción.
+
+La corrección normaliza `/` y `\` en el verificador y añade `--no-sandbox`
+solo a los lanzamientos Electron de test en Linux. La aplicación distribuida
+no recibe ese flag. Evidencia local posterior: scripts multiplataforma 0/2,1
+s; A-14…A-16 0/137 s; ejecutable empaquetado 0/6,6 s; lint 0/46,5 s con 677
+avisos; y suite 71/71 0/566,4 s. La segunda CI queda pendiente.
+
+La segunda ejecución (`30724645927`) confirmó la normalización ASAR, pero el
+job macOS arm64 detectó que el verificador recursivo podía escoger el binario
+de `Flo Cafe Helper.app` antes que el ejecutable principal. El paquete y su
+binario nativo se habían generado correctamente y la suite 71/71 había pasado.
+El arnés se corrigió para derivar el ejecutable exclusivamente del directorio
+`Contents/MacOS` correspondiente al mismo `Resources/app.asar` validado, sin
+modificar la aplicación ni el empaquetado. La comprobación localizada y el
+verificador Windows empaquetado pasaron; el protocolo posterior completo
+(`lint`, build principal, build frontend y 71/71) terminó con código 0 en
+682,3 s, con los 677 avisos de lint ya registrados. La nueva ejecución queda
+pendiente.
+
+La tercera ejecución (`30725166044`) permitió arrancar Electron en Ubuntu con
+el sandbox de Chromium desactivado solo para test y alcanzó A-16. El evento Tab
+enviado con `webContents.sendInputEvent` no actuó porque esa API requiere una
+ventana enfocada y `xvfb-run` no ejecuta un gestor de ventanas. El E2E conserva
+la prueba real del orden de foco, pero envía Tab mediante
+`Input.dispatchKeyEvent` de Chromium, independiente del foco del sistema. No
+se modificó la interfaz ni se sustituyó la navegación por una asignación de
+foco programática.
+
+La misma ejecución confirmó macOS arm64 completamente (71/71, paquete y smoke
+del asistente). macOS x64 también pasó 71/71 y generó el paquete con su binario
+nativo, pero `macos-latest` era un runner ARM64 y el smoke x64 no llegó a crear
+su resultado. La matriz asigna desde entonces `macos-15-intel` a x64 y conserva
+`macos-latest` para arm64, de modo que cada aplicación empaquetada se ejecuta
+en su arquitectura nativa. La nueva ejecución queda pendiente.
+
+Evidencia local posterior: A-14…A-16 con Electron/frontend reales, incluido
+Tab mediante Chromium, pasaron con código 0 en 166,1 s. La prueba de matriz,
+lint (0 errores/677 avisos), build principal, build frontend y la suite 71/71
+pasaron después con código 0 en 635 s.
+
+La cuarta ejecución (`30726107720`) asignó correctamente el runner Intel,
+pero `npm ci` se detuvo antes del build: el bundle x64 del runtime Electron de
+desarrollo llegó sin la firma ad-hoc que exige `verify:electron`. La descarga
+había terminado y el rebuild nativo había pasado. Para conservar el gate sin
+desactivar Gatekeeper ni relajar el verificador, solo el runner Intel instala
+sin scripts, ejecuta el instalador oficial de Electron, aplica una firma
+ad-hoc local al runtime desechable, reconstruye las dependencias nativas y
+ejecuta `verify:electron`. Esto no firma ni modifica el paquete distribuido.
+La nueva ejecución queda pendiente.
+
+La quinta ejecución (`30726252221`) confirmó Windows, macOS arm64 y macOS x64
+completamente, incluidos 71/71, paquete y smoke del asistente. La preparación
+Intel pasó también `verify:electron`. En los dos jobs Ubuntu, el protocolo de
+depuración de Chromium no pudo producir la acción Tab porque Xvfb seguía sin
+gestor de ventanas. Los runners Linux instalan desde entonces Openbox solo
+como dependencia de CI y ejecutan la suite en un escritorio X desechable. El
+E2E vuelve al `sendInputEvent` nativo de Electron y exige primero que la
+ventana esté realmente enfocada. No se añade una dependencia a FloCafe ni se
+afecta el uso sin Bash en Windows. La nueva ejecución queda pendiente.
+
+Evidencia local posterior: prueba de configuración y A-14…A-16 con foco/Tab
+nativos pasaron con código 0 en 158,6 s, incluidos ambos builds. Lint terminó
+sin errores, con los 677 avisos conocidos, y la suite 71/71 pasó con código 0
+en 603,9 s.
+
+La sexta ejecución (`30727074254`) confirmó que Openbox permitía a Electron
+marcar la ventana como enfocada. A-16 seguía fallando porque asumía que un
+único Tab siempre entraba en `Elegir copia`: Linux podía entregar inicialmente
+ese único botón ya enfocado, por lo que el primer Tab salía de él. El E2E ahora
+recorre el orden real con eventos Tab hasta alcanzar el botón y lo activa con
+Espacio nativo; no usa `.focus()` ni `.click()` del DOM y falla mostrando el
+elemento activo si la navegación no funciona. `ENTER` y `Return` no activaron
+el botón mediante `sendInputEvent` en Electron 43 (código 1 en ambas pruebas
+directas); `Space` completó A-14…A-16 con código 0 en 6,3 s. La nueva ejecución
+queda pendiente.
+
+El protocolo posterior completo —prueba de configuración, lint (0 errores y
+677 avisos), build principal, build frontend y 71/71— pasó con código 0 en
+673,1 s.
+
+La séptima ejecución (`30727746729`) descartó la hipótesis anterior: aunque
+Openbox hacía que `BrowserWindow.isFocused()` devolviera verdadero, seis
+eventos Tab nativos dejaron el elemento activo en `BODY`. El log de Chromium
+mostró además que el runner no podía conectarse al bus de sesión. Los jobs
+Linux pasan por ello a crear una sesión de escritorio efímera completa con
+Xvfb, `dbus-run-session` y Openbox. `dbus-x11` es una dependencia exclusiva
+del runner; no se incorpora a FloCafe, sus paquetes ni su operación offline.
+La nueva ejecución queda pendiente.
+
+La octava ejecución (`30727921331` y `30727921345`) creó correctamente la
+sesión D-Bus, pero reprodujo A-16 en los dos jobs Ubuntu: el foco permaneció en
+`BODY` después de seis Tabs inyectados. Esto confirma una limitación de la
+inyección `sendInputEvent` de Electron/Chromium en Linux headless, no un fallo
+del orden de foco de la interfaz. Se retiró D-Bus por no aportar cobertura. El
+E2E mantiene Tab nativo en Windows y macOS; en Linux comprueba de forma
+determinista que `Elegir copia` es el primer control del orden de teclado, lo
+enfoca y exige que Espacio nativo active tanto ese botón como `Comprobar`. No
+se sustituye la activación por `.click()` y la prueba falla si los controles
+dejan de ser botones nativos o salen del orden de teclado. La nueva ejecución
+queda pendiente.
+
+Validación local posterior: A-14…A-16 y ambos builds pasaron con código 0 en
+116,3 s; la prueba de configuración multiplataforma y lint pasaron con código
+0 en 56,8 s (0 errores, 677 avisos conocidos); la suite completa 71/71 pasó
+con código 0 en 313,2 s.
+
+La novena ejecución (`30728424149` y `30728424166`) hizo pasar la matriz
+Ubuntu completa, incluidos 71/71, empaquetado y smoke aislado. El CI Linux
+base verificó el orden de foco, pero perdió de forma intermitente la
+activación de Espacio antes de seleccionar el paquete. Para eliminar la
+diferencia entre dos runners equivalentes, la inyección Linux usa el protocolo
+de entrada de Chromium después de `Page.bringToFront` y emulación explícita de
+foco; Windows y macOS mantienen `sendInputEvent`. Ambos canales emiten Tab y
+Espacio reales sobre botones nativos. La nueva ejecución queda pendiente.
+
+Evidencia local directa: el canal de depuración forzado pasó A-14…A-16 con
+código 0 en 4,8 s y el canal normal de Windows volvió a pasar con código 0 en
+4,3 s.
+
+El primer inicio del protocolo local completo terminó con código 1 en 0,9 s:
+la prueba de configuración conservaba la expectativa del intento anterior que
+prohibía `Input.dispatchKeyEvent`. Se actualizó para exigir el protocolo
+completo —ventana al frente, emulación de foco e inyección de teclado— y
+mantener la prohibición de activar controles mediante `.click()` del elemento
+activo. El protocolo se reinicia desde el primer gate.
