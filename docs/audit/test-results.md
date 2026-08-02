@@ -1108,3 +1108,10 @@ Espacio reales sobre botones nativos. La nueva ejecución queda pendiente.
 Evidencia local directa: el canal de depuración forzado pasó A-14…A-16 con
 código 0 en 4,8 s y el canal normal de Windows volvió a pasar con código 0 en
 4,3 s.
+
+El primer inicio del protocolo local completo terminó con código 1 en 0,9 s:
+la prueba de configuración conservaba la expectativa del intento anterior que
+prohibía `Input.dispatchKeyEvent`. Se actualizó para exigir el protocolo
+completo —ventana al frente, emulación de foco e inyección de teclado— y
+mantener la prohibición de activar controles mediante `.click()` del elemento
+activo. El protocolo se reinicia desde el primer gate.

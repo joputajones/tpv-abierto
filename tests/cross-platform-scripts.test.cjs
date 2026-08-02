@@ -73,7 +73,9 @@ async function main() {
   assert.match(recoveryE2eProbeSource, /webContents\.sendInputEvent/);
   assert.match(recoveryE2eProbeSource, /pressKey\(window, 'Space'\)/);
   assert.equal(recoveryE2eProbeSource.includes('document.activeElement.click()'), false);
-  assert.equal(recoveryE2eProbeSource.includes('Input.dispatchKeyEvent'), false);
+  assert.match(recoveryE2eProbeSource, /Page\.bringToFront/);
+  assert.match(recoveryE2eProbeSource, /Emulation\.setFocusEmulationEnabled/);
+  assert.match(recoveryE2eProbeSource, /Input\.dispatchKeyEvent/);
   assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);
   assert.equal(packageVerifierSource.includes("path.join(path.dirname(resources), 'MacOS')"), true);
