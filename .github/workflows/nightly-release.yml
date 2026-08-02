@@ -55,7 +55,19 @@ jobs:
         run: ${{ matrix.extra-deps }}
 
       - name: Install npm dependencies
+        if: matrix.os != 'macos-15-intel'
         run: npm ci
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Install npm dependencies on macOS Intel
+        if: matrix.os == 'macos-15-intel'
+        run: |
+          npm ci --ignore-scripts
+          npx --no-install install-electron
+          codesign --force --deep --sign - --timestamp=none node_modules/electron/dist/Electron.app
+          npx --no-install electron-builder install-app-deps
+          npm run verify:electron
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 

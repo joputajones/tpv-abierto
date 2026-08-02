@@ -1029,3 +1029,13 @@ Evidencia local posterior: A-14…A-16 con Electron/frontend reales, incluido
 Tab mediante Chromium, pasaron con código 0 en 166,1 s. La prueba de matriz,
 lint (0 errores/677 avisos), build principal, build frontend y la suite 71/71
 pasaron después con código 0 en 635 s.
+
+La cuarta ejecución (`30726107720`) asignó correctamente el runner Intel,
+pero `npm ci` se detuvo antes del build: el bundle x64 del runtime Electron de
+desarrollo llegó sin la firma ad-hoc que exige `verify:electron`. La descarga
+había terminado y el rebuild nativo había pasado. Para conservar el gate sin
+desactivar Gatekeeper ni relajar el verificador, solo el runner Intel instala
+sin scripts, ejecuta el instalador oficial de Electron, aplica una firma
+ad-hoc local al runtime desechable, reconstruye las dependencias nativas y
+ejecuta `verify:electron`. Esto no firma ni modifica el paquete distribuido.
+La nueva ejecución queda pendiente.
