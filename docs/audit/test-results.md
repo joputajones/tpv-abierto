@@ -1039,3 +1039,18 @@ sin scripts, ejecuta el instalador oficial de Electron, aplica una firma
 ad-hoc local al runtime desechable, reconstruye las dependencias nativas y
 ejecuta `verify:electron`. Esto no firma ni modifica el paquete distribuido.
 La nueva ejecución queda pendiente.
+
+La quinta ejecución (`30726252221`) confirmó Windows, macOS arm64 y macOS x64
+completamente, incluidos 71/71, paquete y smoke del asistente. La preparación
+Intel pasó también `verify:electron`. En los dos jobs Ubuntu, el protocolo de
+depuración de Chromium no pudo producir la acción Tab porque Xvfb seguía sin
+gestor de ventanas. Los runners Linux instalan desde entonces Openbox solo
+como dependencia de CI y ejecutan la suite en un escritorio X desechable. El
+E2E vuelve al `sendInputEvent` nativo de Electron y exige primero que la
+ventana esté realmente enfocada. No se añade una dependencia a FloCafe ni se
+afecta el uso sin Bash en Windows. La nueva ejecución queda pendiente.
+
+Evidencia local posterior: prueba de configuración y A-14…A-16 con foco/Tab
+nativos pasaron con código 0 en 158,6 s, incluidos ambos builds. Lint terminó
+sin errores, con los 677 avisos conocidos, y la suite 71/71 pasó con código 0
+en 603,9 s.

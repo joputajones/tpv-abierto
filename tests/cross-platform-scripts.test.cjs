@@ -69,14 +69,20 @@ async function main() {
   const fullMatrixSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'nightly-release.yml'), 'utf8');
   const packageVerifierSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'verify-recovery-assistant-package.cjs'), 'utf8');
   assert.match(recoveryE2eSource, /process\.platform === 'linux'.*--no-sandbox/);
-  assert.match(recoveryE2eProbeSource, /Input\.dispatchKeyEvent/);
-  assert.equal(recoveryE2eProbeSource.includes('webContents.sendInputEvent'), false);
+  assert.match(recoveryE2eProbeSource, /window\.isFocused\(\)/);
+  assert.match(recoveryE2eProbeSource, /webContents\.sendInputEvent/);
+  assert.equal(recoveryE2eProbeSource.includes('Input.dispatchKeyEvent'), false);
   assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);
   assert.equal(packageVerifierSource.includes("path.join(path.dirname(resources), 'MacOS')"), true);
   assert.equal(packageVerifierSource.includes("candidate.includes('.app/Contents/MacOS/')"), false);
   assert.match(fullMatrixSource, /- os: macos-15-intel\s+target: --mac --x64/);
   assert.match(fullMatrixSource, /- os: macos-latest\s+target: --mac --arm64/);
+  assert.match(fullMatrixSource, /install -y fakeroot dpkg openbox/);
+  assert.match(fullMatrixSource, /openbox.*npm test/);
+  const ciSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert.match(ciSource, /install -y openbox/);
+  assert.match(ciSource, /openbox.*npm test/);
 
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
   const noBashPathEntries = [path.dirname(process.execPath)];

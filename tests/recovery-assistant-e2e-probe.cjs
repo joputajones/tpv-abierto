@@ -76,19 +76,6 @@ async function waitFor(predicate, message, timeoutMs = 30_000) {
   throw new Error(`${message}; ${lastError?.message || 'timeout'}`);
 }
 
-async function pressTab(webContents) {
-  const chromeDebugger = webContents.debugger;
-  const alreadyAttached = chromeDebugger.isAttached();
-  if (!alreadyAttached) chromeDebugger.attach('1.3');
-  try {
-    const key = { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 };
-    await chromeDebugger.sendCommand('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...key });
-    await chromeDebugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', ...key });
-  } finally {
-    if (!alreadyAttached && chromeDebugger.isAttached()) chromeDebugger.detach();
-  }
-}
-
 async function main() {
   await app.whenReady();
   const firstWindow = await waitFor(
@@ -132,7 +119,12 @@ async function main() {
   assert.equal(initial.detailsPresent, false);
   assert.doesNotMatch(initial.body, /PRAGMA|_flo_meta|foreign keys|WAL/i);
 
-  await pressTab(window.webContents);
+  window.show();
+  window.focus();
+  await waitFor(() => window.isFocused(), 'assistant window could not receive keyboard input');
+  window.webContents.focus();
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'TAB' });
+  window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'TAB' });
   await waitFor(
     () => window.webContents.executeJavaScript("document.activeElement?.getAttribute('data-testid') === 'choose-backup'"),
     'keyboard focus did not reach the choose button',
