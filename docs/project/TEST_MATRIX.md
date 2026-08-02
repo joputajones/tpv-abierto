@@ -27,8 +27,8 @@ evidence alone.
 | Checksum before SQLite/destination | `DONE` | Local B-01/B-02/B-03 and both consumers reject mismatch before SQLite access or destination creation |
 | Independent restore and continuity | `DONE` | Fresh jobs restore with production `restoreBackup()`, reopen, advance order/bill sequences, write and reopen again |
 | Windows/Linux artifact transfer | `DONE` | Run 30671201413: Windows producer and independent Windows/Linux consumers share database SHA-256 `d2c4ee11…c1da95`; evidence `CI_CROSS_RUNNER` |
-| Human blind drill | `PARTIAL` | #34 closed after a second operator restored on another physical computer. The #39 branch adds the graphical assistant and a one-page human script, but that script has not been executed by a non-technical person |
-| Graphical recovery assistant | `PARTIAL` | Local A-01…A-16 cover valid/invalid packages, isolation, cancellation, privacy, zero Internet and real Electron UI. Merge and four-platform CI remain pending |
+| Human blind drill | `PARTIAL` | #34 closed after a second operator restored on another physical computer. PR #46 adds the graphical assistant and a one-page human script, but that script has not been executed by a non-technical person |
+| Graphical recovery assistant | `DONE` (`CODE/SIM/BUILD/CI`) | PR #46: A-01…A-16 cover valid/invalid packages, isolation, cancellation, privacy, zero Internet and real Electron UI; 71/71, packaging and isolated launch pass on Windows, Ubuntu and macOS x64/arm64 |
 
 PR #35 closes only the automated scope in #33. It does not close M0. Portable
 backup and automated independent-runner restore are `DONE` only at
@@ -62,7 +62,7 @@ still absent.
 | `npm.cmd run test:upgrade-path` | `DONE` | Integrated v0→v38 path creates a verified backup and passes integrity, FK, preservation, schema parity and idempotency |
 | `npm.cmd run test:restart-recovery` | `DONE` | PR #31 integrates R-01…R-12; Windows post-merge passes in 53.5 s and Linux CI logs all 12 PASS cases plus cleanup |
 | `npm.cmd run build` | `PARTIAL` | TypeScript and runtime-asset copy pass |
-| `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 22 routes; the current clean install reports 0 frontend vulnerabilities, while the historical 9-high result remains recorded |
+| `npm.cmd run build:frontend` | `PARTIAL` | Next 16.2.12 exports 23 routes; the current clean install reports 0 frontend vulnerabilities, while the historical 9-high result remains recorded |
 | `node dev-server.js` | `PARTIAL` | API/POS `:3001`, KDS `:3002`, health and HTML 200; synthetic order survived termination/restart |
 | `npm.cmd audit --json` | `PARTIAL` | 1 moderate transitive development advisory (`tar`) |
 | `cd frontend; npm.cmd audit --json` | `PARTIAL` | Historical direct audit found 9 high lint/tooling advisories; the current clean-install output reports 0, but the direct audit was not repeated in the post-PR #28 gate |
@@ -85,9 +85,9 @@ install, matrix, upgrade, backup, both builds and all 67 scripts without Bash.
 |---|---|---|---|---|
 | T-BLD-001 | Fresh dependency installation | Command log | `DONE` | Integrated `main` passes clean PowerShell installation, Electron verification and native rebuild without Bash |
 | T-BLD-002 | Main TypeScript build | `BUILD` | `DONE` | Integrated `main` TypeScript build passes locally and in Linux CI |
-| T-BLD-003 | Frontend static build | `BUILD` | `DONE` | Integrated `main` exports 22 routes locally and in CI; tooling advisories remain tracked separately |
-| T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; no packaged build |
-| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` at `a6724c56` passes all 69 scripts without Bash; PR #44 and post-merge run `30711604415` pass the suite, builds and unpacked packaging on Ubuntu, Windows, macOS x64 and macOS arm64 |
+| T-BLD-003 | Frontend static build | `BUILD` | `DONE` | Integrated `main` exports 23 routes locally and in CI; tooling advisories remain tracked separately |
+| T-BLD-004 | Windows application launch | `BUILD` + screenshot/log | `PARTIAL` | Initial Electron audit log plus repeated standalone launch; PR #46 packages Windows and launches only the isolated assistant, not the normal application/hardware path |
+| T-BLD-005 | Existing test suite | Command log | `DONE` | Integrated `main` at `28a3f8d` passes all 71 scripts without Bash; PR #46 run `30728647708` passes the suite, builds, unpacked packaging and isolated assistant launch on Ubuntu, Windows, macOS x64 and macOS arm64 |
 | T-BLD-006 | Existing database upgrade path | `CODE` | `DONE` | Integrated `main` blocks unsafe backup failures, preserves the v0 source and completes v0→v38 after verification |
 
 ## Controlled restart recovery — issue #30 / PR #31
@@ -187,7 +187,7 @@ guard failure 0 ms against the explicit 250 ms threshold.
 | T-BKP-003 | Restore into disposable installation | `SIM` | `PARTIAL` | Automated restore test passes |
 | T-BKP-004 | Database migration creates pre-migration backup | `CODE` + `SIM` | `DONE` | Integrated path verifies version/integrity/read-only reopen, publishes atomically and proves isolated synthetic retry; not an off-device recovery claim |
 | T-BKP-005 | Restore instructions followed by a second person | `BENCH` | `PARTIAL` | #34 confirms functional restore on another physical computer, but advanced checks were incomplete and the runbook was not suitable for non-technical staff; #39 open |
-| T-BKP-006 | Graphical backup check assistant | `CODE` + `SIM` | `PARTIAL` | A-01…A-16 pass locally with synthetic data; technical merge, packaged platform matrix and real non-technical evaluation remain pending |
+| T-BKP-006 | Graphical backup check assistant | `CODE` + `SIM` + `BUILD` + `CI` | `DONE` | PR #46 merged at `28a3f8d`; A-01…A-16, 71/71, sanitized reports, zero Internet, four-platform packaging and isolated launch pass. Real non-technical evaluation remains separately pending in T-BKP-005/#39 |
 
 ## Diagnostics and privacy
 

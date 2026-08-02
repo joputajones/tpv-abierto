@@ -341,7 +341,7 @@ fiscalidad. PR #41, #42 y #44 están fusionadas. El run post-merge
 arm64; CI y restore integrados también pasan desde `a6724c56`.
 CORE-004 es `DONE` solo a nivel `SIM/CI`; R-011 y R-018 permanecen `PARTIAL`.
 
-## Asistente gráfico de recuperación (rama #39)
+## Asistente gráfico de recuperación (PR #46 integrada)
 
 `Herramientas → Comprobar copia de seguridad` abre la ruta estática
 `/recovery-assistant/` mediante el preload existente. El renderer solo recibe
@@ -360,3 +360,8 @@ obsoletos directorios que contienen el marcador.
 solo `frontend/out` en un puerto loopback efímero. No llama al inicializador
 normal de base activa, API, KDS, cloud, telemetría, Google Drive, WhatsApp,
 mDNS, actualización ni impresión.
+
+La integración `28a3f8d` pasó A-01…A-16, la suite 71/71, CI normal y
+empaquetado con apertura aislada en Windows, Ubuntu, macOS x64 y macOS arm64.
+Esta evidencia es `CODE/SIM/BUILD/CI`; no sustituye la prueba pendiente con una
+persona no técnica ni la validación con datos reales del restaurante.
