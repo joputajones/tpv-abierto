@@ -1095,3 +1095,16 @@ Validación local posterior: A-14…A-16 y ambos builds pasaron con código 0 en
 116,3 s; la prueba de configuración multiplataforma y lint pasaron con código
 0 en 56,8 s (0 errores, 677 avisos conocidos); la suite completa 71/71 pasó
 con código 0 en 313,2 s.
+
+La novena ejecución (`30728424149` y `30728424166`) hizo pasar la matriz
+Ubuntu completa, incluidos 71/71, empaquetado y smoke aislado. El CI Linux
+base verificó el orden de foco, pero perdió de forma intermitente la
+activación de Espacio antes de seleccionar el paquete. Para eliminar la
+diferencia entre dos runners equivalentes, la inyección Linux usa el protocolo
+de entrada de Chromium después de `Page.bringToFront` y emulación explícita de
+foco; Windows y macOS mantienen `sendInputEvent`. Ambos canales emiten Tab y
+Espacio reales sobre botones nativos. La nueva ejecución queda pendiente.
+
+Evidencia local directa: el canal de depuración forzado pasó A-14…A-16 con
+código 0 en 4,8 s y el canal normal de Windows volvió a pasar con código 0 en
+4,3 s.

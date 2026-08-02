@@ -65,7 +65,7 @@ try {
   assert.equal(evidence.validStatus, 'green');
   assert.equal(evidence.alteredStatus, 'red');
   assert.equal(evidence.keyboardNavigation, true);
-  assert.ok(['native-tab', 'verified-order'].includes(evidence.keyboardMethod));
+  assert.ok(['native-tab', 'debugger-tab', 'verified-order'].includes(evidence.keyboardMethod));
   assert.equal(evidence.detailsInitiallyClosed, true);
   assert.equal(evidence.reportSanitized, true);
   console.log('PASS A-14: isolated mode opens without live database or production services');

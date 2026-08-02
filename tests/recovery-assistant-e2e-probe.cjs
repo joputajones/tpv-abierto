@@ -10,6 +10,7 @@ const validPackage = process.env.FLO_RECOVERY_E2E_VALID;
 const alteredPackage = process.env.FLO_RECOVERY_E2E_ALTERED;
 const reportPath = process.env.FLO_RECOVERY_E2E_REPORT;
 if (!validPackage || !alteredPackage || !reportPath) throw new Error('E2E probe configuration missing');
+const useDebuggerInput = process.platform === 'linux' || process.env.FLO_RECOVERY_E2E_DEBUGGER_INPUT === '1';
 
 const startedServices = [];
 function blockFunction(modulePath, exportName) {
@@ -76,7 +77,24 @@ async function waitFor(predicate, message, timeoutMs = 30_000) {
   throw new Error(`${message}; ${lastError?.message || 'timeout'}`);
 }
 
+async function prepareKeyboardInput(window) {
+  if (!useDebuggerInput) return;
+  if (!window.webContents.debugger.isAttached()) window.webContents.debugger.attach('1.3');
+  await window.webContents.debugger.sendCommand('Page.bringToFront');
+  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
+}
+
 async function pressKey(window, keyCode) {
+  if (useDebuggerInput) {
+    const isTab = keyCode.toUpperCase() === 'TAB';
+    const key = isTab
+      ? { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 }
+      : { key: ' ', code: 'Space', text: ' ', unmodifiedText: ' ', windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 };
+    await window.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', ...key });
+    await window.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', ...key });
+    await delay(100);
+    return;
+  }
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
   window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
   await delay(100);
@@ -103,7 +121,7 @@ async function focusByTab(window, testId, maxTabs = 6) {
     const focused = await window.webContents.executeJavaScript(
       `document.activeElement?.getAttribute('data-testid') === ${JSON.stringify(testId)}`,
     );
-    if (focused) return { method: 'native-tab', tab };
+    if (focused) return { method: useDebuggerInput ? 'debugger-tab' : 'native-tab', tab };
   }
   const active = await window.webContents.executeJavaScript(
     "({ tag: document.activeElement?.tagName, testId: document.activeElement?.getAttribute('data-testid') })",
@@ -182,6 +200,7 @@ async function main() {
   window.focus();
   await waitFor(() => window.isFocused(), 'assistant window could not receive keyboard input');
   window.webContents.focus();
+  await prepareKeyboardInput(window);
   const keyboardEvidence = await focusByTab(window, 'choose-backup');
   await pressKey(window, 'Space');
   await waitFor(
@@ -242,6 +261,7 @@ async function main() {
     detailsInitiallyClosed: true,
     reportSanitized: true,
   })}\n`);
+  if (window.webContents.debugger.isAttached()) window.webContents.debugger.detach();
   window.destroy();
   app.quit();
 }
