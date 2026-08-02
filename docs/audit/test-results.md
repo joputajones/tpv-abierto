@@ -1069,3 +1069,12 @@ queda pendiente.
 El protocolo posterior completo —prueba de configuración, lint (0 errores y
 677 avisos), build principal, build frontend y 71/71— pasó con código 0 en
 673,1 s.
+
+La séptima ejecución (`30727746729`) descartó la hipótesis anterior: aunque
+Openbox hacía que `BrowserWindow.isFocused()` devolviera verdadero, seis
+eventos Tab nativos dejaron el elemento activo en `BODY`. El log de Chromium
+mostró además que el runner no podía conectarse al bus de sesión. Los jobs
+Linux pasan por ello a crear una sesión de escritorio efímera completa con
+Xvfb, `dbus-run-session` y Openbox. `dbus-x11` es una dependencia exclusiva
+del runner; no se incorpora a FloCafe, sus paquetes ni su operación offline.
+La nueva ejecución queda pendiente.

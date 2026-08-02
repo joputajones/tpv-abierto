@@ -25,7 +25,7 @@ jobs:
         include:
           - os: ubuntu-latest
             target: --linux
-            extra-deps: sudo apt-get update -qq && sudo apt-get install -y fakeroot dpkg openbox
+            extra-deps: sudo apt-get update -qq && sudo apt-get install -y fakeroot dpkg openbox dbus-x11
           # Run each macOS package on its native architecture so the packaged
           # recovery-assistant smoke test exercises the executable itself.
           - os: macos-15-intel
@@ -85,7 +85,7 @@ jobs:
 
       - name: Run full platform test suite under Xvfb
         if: runner.os == 'Linux'
-        run: xvfb-run -a sh -c 'openbox >/tmp/flo-openbox.log 2>&1 & npm test'
+        run: xvfb-run -a dbus-run-session -- sh -c 'openbox >/tmp/flo-openbox.log 2>&1 & npm test'
 
       - name: Package (unpacked directory, no installer)
         run: npx electron-builder ${{ matrix.target }} --dir --publish never
