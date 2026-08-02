@@ -48,7 +48,8 @@ try {
     FLO_RECOVERY_E2E_REPORT: reportPath,
   };
   delete probeEnvironment.ELECTRON_RUN_AS_NODE;
-  const result = spawnSync(electronPath, [probe], {
+  const electronArgs = [...(process.platform === 'linux' ? ['--no-sandbox'] : []), probe];
+  const result = spawnSync(electronPath, electronArgs, {
     cwd: repositoryRoot,
     env: probeEnvironment,
     encoding: 'utf8',

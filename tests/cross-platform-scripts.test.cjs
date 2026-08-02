@@ -64,6 +64,12 @@ async function main() {
     'the coordinator must run under Node and launch Electron explicitly',
   );
 
+  const recoveryE2eSource = fs.readFileSync(path.join(__dirname, 'recovery-assistant-e2e.test.cjs'), 'utf8');
+  const packageVerifierSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'verify-recovery-assistant-package.cjs'), 'utf8');
+  assert.match(recoveryE2eSource, /process\.platform === 'linux'.*--no-sandbox/);
+  assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
+  assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);
+
   const verifier = path.resolve(__dirname, '..', 'scripts', 'verify-electron-runtime.cjs');
   const noBashPathEntries = [path.dirname(process.execPath)];
   let nativeToolsDir;

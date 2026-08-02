@@ -26,7 +26,7 @@ function findRecursive(directory, predicate) {
 
 const appAsar = findRecursive(releaseRoot, (candidate, entry) => entry.isFile() && path.basename(candidate) === 'app.asar');
 assert.ok(appAsar, 'packaged app.asar was not found');
-const entries = new Set(asar.listPackage(appAsar).map((entry) => entry.replace(/^\\/, '').replace(/\\/g, '/')));
+const entries = new Set(asar.listPackage(appAsar).map((entry) => entry.replace(/^[\\/]/, '').replace(/\\/g, '/')));
 for (const required of [
   'dist/index.js',
   'dist/preload.js',
@@ -78,7 +78,11 @@ try {
     FLO_RECOVERY_TEST_DEBUG: '1',
   };
   delete environment.ELECTRON_RUN_AS_NODE;
-  const args = ['--recovery-assistant', '--recovery-assistant-smoke-exit'];
+  const args = [
+    ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
+    '--recovery-assistant',
+    '--recovery-assistant-smoke-exit',
+  ];
   const result = process.platform === 'linux'
     ? spawnSync('xvfb-run', ['-a', executable, ...args], { env: environment, encoding: 'utf8', timeout: 60_000 })
     : spawnSync(executable, args, { env: environment, encoding: 'utf8', timeout: 60_000 });

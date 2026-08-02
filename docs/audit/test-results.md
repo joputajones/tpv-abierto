@@ -980,3 +980,19 @@ lint en 59,7 s (0 errores/677 advertencias); build principal en 43,2 s;
 frontend en 123,4 s; `npm test` 71/71 en 547,5 s; paquete Windows x64 `--dir`
 en 50,8 s; y ejecución sintética del binario empaquetado en 7,1 s, todo con
 código 0.
+
+### Primera CI de la PR #46 y corrección del arnés
+
+El head `76bdeaf4` pasó dependency review, invariante fiscal, Playwright,
+offline Windows/Ubuntu, productor/restore Windows/Ubuntu, la suite y el
+empaquetado Windows. El run Full Cross-Platform Matrix `30723820390` encontró
+dos defectos del arnés: macOS x64/arm64 empaquetó y pasó 71/71, pero el
+verificador no eliminaba `/` inicial de las entradas ASAR; Ubuntu y Linux
+baseline abortaron el E2E porque el runner sin privilegios no tenía el helper
+SUID de Chromium con modo 4755. No fue un fallo de restore ni de producción.
+
+La corrección normaliza `/` y `\` en el verificador y añade `--no-sandbox`
+solo a los lanzamientos Electron de test en Linux. La aplicación distribuida
+no recibe ese flag. Evidencia local posterior: scripts multiplataforma 0/2,1
+s; A-14…A-16 0/137 s; ejecutable empaquetado 0/6,6 s; lint 0/46,5 s con 677
+avisos; y suite 71/71 0/566,4 s. La segunda CI queda pendiente.
