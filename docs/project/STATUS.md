@@ -67,12 +67,13 @@ recovery. BACKUP-002 and R-011 therefore remain `PARTIAL`; the non-technical
 recovery assistant is tracked in open issue
 [#39](https://github.com/joputajones/tpv-abierto/issues/39).
 
-The #39 implementation branch now contains the graphical assistant, a native
-picker, disposable production restore/reopen/write path, sanitized reports and
-local A-01…A-16 evidence in real Electron. It has not yet passed the complete
-CI/packaging gate or merged, and no non-technical person has executed the human
-script. Consequently #39 remains open, R-011 remains `PARTIAL` and M0 remains
-`IN_PROGRESS`.
+PR #46 is merged at `28a3f8d` and integrates the #39 graphical assistant, a
+native picker, disposable production restore/reopen/write path and sanitized
+reports. A-01…A-16, zero-Internet isolation, 71/71 scripts and packaged
+isolated launch pass on Windows, Ubuntu, macOS x64 and macOS arm64. This makes
+the assistant `DONE` at `CODE/SIM/BUILD/CI`; no non-technical person has yet
+executed the human script. Consequently #39 remains open, R-011 remains
+`PARTIAL` and M0 remains `IN_PROGRESS`.
 
 Issue [#40](https://github.com/joputajones/tpv-abierto/issues/40) is closed by
 PR #41 and corrective PRs #42/#44. Dedicated Windows/Ubuntu jobs and the
@@ -102,16 +103,16 @@ Detailed evidence: [audit baseline](../audit/baseline.md),
 | Upstream remote configured locally | `DONE` | `upstream` is `FreeOpenSourcePOS/FloCafe`; evidence merged through PR #14 |
 | Development environment recorded | `DONE` | Windows, Node `v22.20.0`, npm `10.9.3`, Electron `43.2.0`; evidence merged through PR #14 |
 | Clean dependency installation | `DONE` | Integrated `main` runs `npm.cmd ci`, native rebuild and Electron verification without Bash; PR #21 merged and #18 closed |
-| Baseline test suite | `DONE` | Integrated `main` at `a6724c56` passes all 69 scripts without Bash; Linux baseline, dedicated Windows/Ubuntu offline CI and the Ubuntu/Windows/macOS x64/arm64 full matrix also pass |
+| Baseline test suite | `DONE` | Integrated `main` at `28a3f8d` passes all 71 scripts without Bash; Linux baseline, dedicated Windows/Ubuntu offline CI and the Ubuntu/Windows/macOS x64/arm64 full matrix also pass |
 | Upgrade-path test | `DONE` | Integrated `main` blocks checkpoint/copy/open/integrity/version/finalization failures before v1 and passes v0→v38, preservation, parity, idempotency and isolated retry; PR #28 merged and #16 closed |
 | Main TypeScript build | `DONE` | `npm.cmd run build` passes; baseline evidence is merged through PR #14 |
-| Frontend build | `PARTIAL` | Next 16.2.12 exports 22 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; no packaged Windows build was tested |
-| Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit; standalone backend restart was repeated, but no packaged Windows build was tested |
+| Frontend build | `PARTIAL` | Next 16.2.12 exports 23 routes; current frontend install reports 0 vulnerabilities, while the historical 9-high result remains recorded; packaged assistant assets pass the four-platform matrix |
+| Windows application launch | `PARTIAL` | Electron launch was observed in the initial audit and the packaged isolated assistant passes; normal packaged operation with restaurant hardware remains untested |
 | SQLite persistence | `DONE` | PR #31 passes graceful/forced-process commit persistence, open-transaction rollback, WAL recovery, repeated reopen and port reuse on Windows/Linux at `SIM`; physical power loss and off-device recovery remain separate gaps |
 | KDS local-network flow | `PARTIAL` | REST/WebSocket automation and local KDS page pass; no second physical device was used |
 | Secondary cashier/mobile flow | `UNVERIFIED` | No ordinary phone or concurrent client bench test |
 | Physical printer integration | `BLOCKED` | Code/byte-path tests pass, but representative printer, spooler, paper and drawer hardware are unavailable |
-| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`. The #39 branch adds a graphical disposable checker and local A-01…A-16 evidence, but merge, four-platform CI and a real non-technical run remain pending; #39 stays open |
+| Backup and restore validation | `PARTIAL` | Automated portability is `DONE` at `CI_CROSS_RUNNER`; PR #46 makes the graphical checker `DONE` at `CODE/SIM/BUILD/CI` with A-01…A-16 and four-platform packaging. A real non-technical run remains pending, so #39 stays open |
 | Internet-loss test | `DONE` (`SIM/CI` only) | #40 is closed; PR #41/#42/#44, integrated `main` and Full Cross-Platform Matrix `30711604415` pass O-01…O-16 + O-FP with API/KDS/frontend/renderer isolated to loopback and zero Internet successes. Physical disconnection, hostile LAN, hardware, phones and long-duration service are not covered |
 | Architecture and production risks | `DONE` | Reconciled under `docs/audit/` and this tracking set; PR #14 is merged |
 | Dependency review governance | `DONE` | Dependency Graph enabled; pinned action executes with read-only permissions and a high-severity threshold; PR #24 merged and #19 closed. Enforcement remains manual because `main` has no branch protection/ruleset |
@@ -136,7 +137,7 @@ Exit criteria:
 - [x] Local repository remotes and branches recorded; evidence merged in PR #14.
 - [x] Node and npm versions recorded; evidence merged in PR #14.
 - [x] Clean dependency installation completed without Bash on integrated `main`.
-- [x] Existing tests completed; all 69 scripts pass without Bash, including dedicated Windows/Ubuntu offline CI and the full Ubuntu/Windows/macOS x64/arm64 matrix.
+- [x] Existing tests completed; all 71 scripts pass without Bash, including dedicated Windows/Ubuntu offline CI and the full Ubuntu/Windows/macOS x64/arm64 matrix.
 - [x] Main build completed; evidence merged in PR #14.
 - [x] Frontend build completed; evidence merged in PR #14.
 - [x] Application launched on Windows; limited baseline evidence merged in PR #14.
@@ -151,7 +152,8 @@ milestone requires a later human decision and does not imply restaurant
 readiness. The restart/offline matrices remain process-level simulations and
 do not validate physical power loss or real operation. Off-device restore is
 validated at `CI_CROSS_RUNNER`; #34 adds a limited human restore, while complete
-technical recovery and a non-technical assistant remain absent.
+technical recovery remains incomplete; the non-technical assistant is
+integrated at `CODE/SIM/BUILD/CI`, with its real human evaluation still absent.
 
 ### M0 reevaluation after PR #31
 
@@ -160,9 +162,9 @@ technical recovery and a non-technical assistant remain absent.
 | Repository remotes and branches recorded | Fulfilled | PR #14 |
 | Node and npm versions recorded | Fulfilled | Windows baseline and repeated post-merge evidence |
 | Clean dependency installation without Bash | Fulfilled | PR #21 and post-PR #31 `npm.cmd ci` |
-| Existing suite completed | Fulfilled | 69 scripts pass locally without Bash; Linux baseline, dedicated Windows/Ubuntu offline jobs and the four-target full matrix pass |
+| Existing suite completed | Fulfilled | 71 scripts pass locally without Bash; Linux baseline, dedicated Windows/Ubuntu offline jobs and the four-target full matrix pass |
 | Main TypeScript build | Fulfilled | Local and CI build evidence |
-| Frontend static build | Fulfilled | 22 routes; packaged Windows installer remains a separate gap |
+| Frontend static build | Fulfilled | 23 routes; packaged normal application operation remains a separate gap |
 | Application launched on Windows | Fulfilled | Development launch evidence; not packaged/hardware evidence |
 | Database, log and backup paths recorded | Fulfilled | Architecture/audit documentation plus PR #35 cross-runner restore; not a physical or human drill |
 | Disposable committed order survives restart | Fulfilled | R-02 plus repeated post-merge matrix |
@@ -175,7 +177,8 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 ## Immediate next actions
 
-1. Build and human-test the non-technical recovery assistant in #39.
+1. Execute the prepared one-page #39 test with a non-technical person and
+   record completion time, errors, questions and PASS/FAIL without coaching.
 2. Define and enforce the cloud data contract and feature flags before any
    real store is registered.
 3. Run the M1 bench gate with representative printer hardware, two local
@@ -185,8 +188,9 @@ and adjacent production-readiness evidence is still partial or blocked.
 
 - Dependency review is operational, but no branch protection or ruleset enforces
   it; a red check remains a manual governance blocker.
-- #34 produced a limited successful physical restore, but technical disaster
-  recovery and a non-technical, cross-platform assistant remain pending in #39.
+- #34 produced a limited successful physical restore and PR #46 integrates the
+  cross-platform assistant, but its real non-technical test and complete
+  physical disaster-recovery evidence remain pending in #39/R-011.
 - Representative printer/cash-drawer hardware, a multi-device LAN bench and a
   router-failure setup are unavailable.
 - Complete, reviewed and sanitised VirtuaPOS fixtures are unavailable.

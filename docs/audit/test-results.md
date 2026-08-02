@@ -1115,3 +1115,28 @@ prohibía `Input.dispatchKeyEvent`. Se actualizó para exigir el protocolo
 completo —ventana al frente, emulación de foco e inyección de teclado— y
 mantener la prohibición de activar controles mediante `.click()` del elemento
 activo. El protocolo se reinicia desde el primer gate.
+
+### CI, merge y validación posterior de la PR #46
+
+El head protegido `9a6e1198fb7deedce86e6901014a93e1485cddbc` pasó todos los
+checks aplicables: CI `30728647744`, restore fuera del equipo `30728647679` y
+matriz completa `30728647708`. Linux baseline, Playwright, dependency review,
+offline Windows/Ubuntu, restore Windows/Ubuntu y los paquetes Ubuntu, Windows,
+macOS x64 y macOS arm64 terminaron en `SUCCESS`. Cada paquete incluyó el
+worker/assets y abrió el modo aislado. La revisión GraphQL encontró 0
+comentarios, 0 reviews, 0 hilos y 0 conversaciones pendientes.
+
+El protocolo local definitivo previo al merge —configuración multiplataforma,
+lint, build principal, build frontend y 71/71— terminó con código 0 en 395,5 s.
+Lint conservó 0 errores y 677 avisos conocidos. PR #46 se fusionó mediante
+merge commit protegido `28a3f8dbf140acddb4804e6fff5510110a30a886`.
+
+Desde ese `main`, `npm.cmd ci`, A-01…A-13, A-14…A-16, restore fuera del equipo,
+build principal, build frontend y `npm.cmd test` volvieron a pasar con código 0
+en 526,5 s. La instalación raíz informó 1 vulnerabilidad moderada ya conocida;
+la instalación frontend informó 0. No se generaron backups, bases, informes,
+logs ni datos reales dentro del repositorio.
+
+El asistente queda `DONE` a nivel `CODE/SIM/BUILD/CI`. #39 permanece abierta
+porque la prueba preparada con una persona no técnica no se ha ejecutado.
+R-011 continúa `PARTIAL` y M0 continúa `IN_PROGRESS`.
