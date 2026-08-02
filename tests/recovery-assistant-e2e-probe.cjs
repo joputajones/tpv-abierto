@@ -76,6 +76,26 @@ async function waitFor(predicate, message, timeoutMs = 30_000) {
   throw new Error(`${message}; ${lastError?.message || 'timeout'}`);
 }
 
+async function pressKey(window, keyCode) {
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
+  window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
+  await delay(100);
+}
+
+async function focusByTab(window, testId, maxTabs = 6) {
+  for (let tab = 1; tab <= maxTabs; tab += 1) {
+    await pressKey(window, 'TAB');
+    const focused = await window.webContents.executeJavaScript(
+      `document.activeElement?.getAttribute('data-testid') === ${JSON.stringify(testId)}`,
+    );
+    if (focused) return tab;
+  }
+  const active = await window.webContents.executeJavaScript(
+    "({ tag: document.activeElement?.tagName, testId: document.activeElement?.getAttribute('data-testid') })",
+  );
+  throw new Error(`keyboard focus did not reach ${testId}; active=${JSON.stringify(active)}`);
+}
+
 async function main() {
   await app.whenReady();
   const firstWindow = await waitFor(
@@ -123,13 +143,8 @@ async function main() {
   window.focus();
   await waitFor(() => window.isFocused(), 'assistant window could not receive keyboard input');
   window.webContents.focus();
-  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'TAB' });
-  window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'TAB' });
-  await waitFor(
-    () => window.webContents.executeJavaScript("document.activeElement?.getAttribute('data-testid') === 'choose-backup'"),
-    'keyboard focus did not reach the choose button',
-  );
-  await window.webContents.executeJavaScript('document.activeElement.click()');
+  await focusByTab(window, 'choose-backup');
+  await pressKey(window, 'Space');
   await waitFor(
     () => window.webContents.executeJavaScript("document.querySelector('[data-testid=recovery-assistant]')?.getAttribute('data-state') === 'selected'"),
     'native selection did not reach selected state',

@@ -71,6 +71,8 @@ async function main() {
   assert.match(recoveryE2eSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.match(recoveryE2eProbeSource, /window\.isFocused\(\)/);
   assert.match(recoveryE2eProbeSource, /webContents\.sendInputEvent/);
+  assert.match(recoveryE2eProbeSource, /pressKey\(window, 'Space'\)/);
+  assert.equal(recoveryE2eProbeSource.includes('document.activeElement.click()'), false);
   assert.equal(recoveryE2eProbeSource.includes('Input.dispatchKeyEvent'), false);
   assert.match(packageVerifierSource, /process\.platform === 'linux'.*--no-sandbox/);
   assert.equal(packageVerifierSource.includes("entry.replace(/^[\\\\/]/, '')"), true);

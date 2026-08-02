@@ -1054,3 +1054,18 @@ Evidencia local posterior: prueba de configuración y A-14…A-16 con foco/Tab
 nativos pasaron con código 0 en 158,6 s, incluidos ambos builds. Lint terminó
 sin errores, con los 677 avisos conocidos, y la suite 71/71 pasó con código 0
 en 603,9 s.
+
+La sexta ejecución (`30727074254`) confirmó que Openbox permitía a Electron
+marcar la ventana como enfocada. A-16 seguía fallando porque asumía que un
+único Tab siempre entraba en `Elegir copia`: Linux podía entregar inicialmente
+ese único botón ya enfocado, por lo que el primer Tab salía de él. El E2E ahora
+recorre el orden real con eventos Tab hasta alcanzar el botón y lo activa con
+Espacio nativo; no usa `.focus()` ni `.click()` del DOM y falla mostrando el
+elemento activo si la navegación no funciona. `ENTER` y `Return` no activaron
+el botón mediante `sendInputEvent` en Electron 43 (código 1 en ambas pruebas
+directas); `Space` completó A-14…A-16 con código 0 en 6,3 s. La nueva ejecución
+queda pendiente.
+
+El protocolo posterior completo —prueba de configuración, lint (0 errores y
+677 avisos), build principal, build frontend y 71/71— pasó con código 0 en
+673,1 s.
